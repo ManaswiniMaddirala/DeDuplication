@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Files — DeDuplication ML</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* ── Subtype section ───────────────────────────── */
+        .subtype-section { margin-bottom: 24px; animation: fadeUp 0.35s cubic-bezier(0.16,1,0.3,1) both; }
+        .subtype-label {
+            font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.13em; color: var(--muted); margin-bottom: 12px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .subtype-label::before {
+            content: ''; display: inline-block; width: 5px; height: 5px;
+            background: var(--accent); border-radius: 50%;
+            box-shadow: 0 0 8px rgba(79,107,255,0.70);
+            animation: dot-pulse 2.2s ease-in-out infinite;
+        }
+        .subtype-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+        .subtype-card {
+            background: rgba(255,255,255,0.90); backdrop-filter: blur(10px);
+            border: 1.5px solid var(--border); border-radius: var(--r-xl);
+            padding: 22px 14px; text-align: center; cursor: pointer;
+            transition: all 0.32s cubic-bezier(0.34,1.3,0.64,1);
+            position: relative; overflow: hidden; user-select: none;
+            animation: stagger-up 0.5s cubic-bezier(0.16,1,0.3,1) both;
+        }
+        .subtype-card:nth-child(1){ animation-delay:0.04s }
+        .subtype-card:nth-child(2){ animation-delay:0.12s }
+        .subtype-card:nth-child(3){ animation-delay:0.20s }
+        .subtype-card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent); }
+        .subtype-card:hover { border-color: var(--border2); transform: translateY(-4px); box-shadow: var(--shadow-md); }
+        .subtype-card.active { border-color: rgba(245,200,66,0.35); background: rgba(245,200,66,0.05); }
+        .subtype-card.active::after { content:''; position:absolute; top:0; left:0; right:0; height:2.5px; background:linear-gradient(90deg, transparent, #f5c842, transparent); }
+        .subtype-card[data-subtype="mark_list"].active   { border-color:rgba(20,184,166,0.35); background:rgba(20,184,166,0.05); }
+        .subtype-card[data-subtype="mark_list"].active::after { background:linear-gradient(90deg, transparent, var(--teal), transparent); }
+        .subtype-card[data-subtype="fee_receipt"].active  { border-color:rgba(59,130,246,0.35); background:rgba(59,130,246,0.05); }
+        .subtype-card[data-subtype="fee_receipt"].active::after { background:linear-gradient(90deg, transparent, var(--accent), transparent); }
+        .subtype-icon { width:50px; height:50px; border-radius:var(--r-lg); display:flex; align-items:center; justify-content:center; margin:0 auto 12px; font-size:20px; background:var(--surface3); color:var(--muted); border:1px solid var(--border); transition:all 0.32s cubic-bezier(0.34,1.3,0.64,1); }
+        .subtype-card:hover .subtype-icon { transform: scale(1.12) rotate(-6deg); }
+        .subtype-card.active .subtype-icon { background:rgba(245,200,66,0.14); color:#D4A810; border-color:rgba(245,200,66,0.28); box-shadow:0 4px 16px rgba(245,200,66,0.18); }
+        .subtype-card[data-subtype="mark_list"].active .subtype-icon  { background:rgba(20,184,166,0.14); color:var(--teal); border-color:rgba(20,184,166,0.28); box-shadow:0 4px 16px rgba(20,184,166,0.18); }
+        .subtype-card[data-subtype="fee_receipt"].active .subtype-icon { background:var(--accent-lt); color:var(--accent); border-color:rgba(79,107,255,0.28); box-shadow:0 4px 16px rgba(79,107,255,0.18); }
+        .subtype-name { font-weight: 700; font-size: 13px; color: var(--text); letter-spacing: -0.01em; }
+        .subtype-desc { font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--muted); margin-top:4px; line-height:1.5; }
+        .subtype-check { position:absolute; top:10px; right:10px; width:20px; height:20px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9px; color:#fff; opacity:0; transform:scale(0.4) rotate(-45deg); transition:all 0.28s cubic-bezier(0.34,1.5,0.64,1); }
+        .subtype-card.active .subtype-check { opacity:1; transform:scale(1) rotate(0deg); }
+        .subtype-card[data-subtype="mark_list"].active  .subtype-check { background:var(--teal); }
+        .subtype-card[data-subtype="fee_receipt"].active .subtype-check { background:var(--accent); }
+        .subtype-badge { display:none; margin-left:10px; font-family:'JetBrains Mono',monospace; font-size:10px; padding:2px 9px; border-radius:999px; border:1px solid; }
+        .hidden-section { display:none !important; }
+
+        /* ── Type card: colored hover glows ─────────── */
+        #btn-pdf.active { border-color: rgba(239,68,68,0.32); background: rgba(239,68,68,0.05); }
+        #btn-pdf.active::after { content:''; position:absolute; bottom:0; left:0; right:0; height:3px; background:linear-gradient(90deg,transparent,#ef4444,transparent); transform:scaleX(1); }
+        #btn-pdf.active .type-card-icon { color:#ef4444; background:rgba(239,68,68,0.12); border-color:rgba(239,68,68,0.24); animation:float 2.8s ease-in-out infinite; box-shadow:0 6px 20px rgba(239,68,68,0.36); }
+
+        /* ── Animated upload zone extras ────────────── */
+        .drop-zone-inner {
+            position:relative; z-index:2;
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+        }
+        .drop-hint {
+            display:flex; gap:12px; margin-top:20px; flex-wrap:wrap; justify-content:center;
+        }
+        .drop-hint-tag {
+            font-family:'JetBrains Mono',monospace; font-size:9.5px;
+            padding:4px 12px; border-radius:999px;
+            background:var(--surface2); border:1px solid var(--border2);
+            color:var(--muted); transition:all 0.22s ease;
+            animation: stagger-up 0.5s cubic-bezier(0.16,1,0.3,1) both;
+        }
+        .drop-hint-tag:nth-child(1){animation-delay:0.5s}
+        .drop-hint-tag:nth-child(2){animation-delay:0.6s}
+        .drop-hint-tag:nth-child(3){animation-delay:0.7s}
+        .drop-zone:hover .drop-hint-tag { border-color:var(--accent-md); color:var(--accent); }
+
+        /* Animated rings around drop zone on hover */
+        .drop-zone-ring {
+            position:absolute; inset:-2px; border-radius:calc(var(--r-2xl) + 4px);
+            border:2px dashed transparent; pointer-events:none; z-index:1;
+            transition:border-color 0.3s ease;
+        }
+        .drop-zone:hover .drop-zone-ring { border-color:rgba(79,107,255,0.30); animation:ring-spin 8s linear infinite; }
+        .drop-zone.dragover .drop-zone-ring { border-color:rgba(79,107,255,0.60); animation:ring-spin 3s linear infinite; }
+        @keyframes ring-spin { to { transform: rotate(360deg); } }
+
+        @media(max-width:1100px) { .type-grid[style*="repeat(5"]{grid-template-columns:repeat(3,1fr)!important} }
+        @media(max-width:700px) { .type-grid[style*="repeat(5"]{grid-template-columns:repeat(2,1fr)!important} }
+    </style>
+</head>
+<body>
+<div class="app-shell">
+
+    <nav class="topbar">
+        <div class="topbar-inner">
+            <a href="{{ url_for('dashboard') }}" class="topbar-brand">
+                <div class="topbar-logo-mark"><i class="fa-solid fa-layer-group"></i></div>
+                <div class="topbar-brand-text">
+                    <div class="logo-name">DeDuplication ML</div>
+                    <div class="logo-sub">AI Detection</div>
+                </div>
+            </a>
+            <div class="topbar-nav">
+                <a href="{{ url_for('home') }}"       class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="{{ url_for('dashboard') }}"  class="nav-link"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+                <a href="{{ url_for('upload') }}"     class="nav-link active"><i class="fa-solid fa-upload"></i> Upload</a>
+                <a href="{{ url_for('duplicates') }}" class="nav-link"><i class="fa-solid fa-copy"></i> Duplicates</a>
+                <div class="nav-divider"></div>
+                <a href="{{ url_for('about') }}"   class="nav-link"><i class="fa-solid fa-circle-info"></i> About</a>
+                <a href="{{ url_for('contact') }}" class="nav-link"><i class="fa-solid fa-headset"></i> Support</a>
+            </div>
+            <div class="topbar-right">
+                <div class="topbar-user">
+                    <div class="avatar">{{ user_name[0]|upper if user_name else 'U' }}</div>
+                    <div class="topbar-user-info">
+                        <div class="user-name">{{ user_name or 'User' }}</div>
+                        <div class="user-email">{{ user_email or 'user@example.com' }}</div>
+                    </div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="logout-btn">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Logout</span>
+                </a>
+                <button class="topbar-hamburger" onclick="toggleMobileNav()" aria-label="Menu">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+    <div class="mobile-nav-drawer" id="mobile-nav">
+        <a href="{{ url_for('dashboard') }}"  class="nav-link"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+        <a href="{{ url_for('upload') }}"     class="nav-link active"><i class="fa-solid fa-upload"></i> Upload</a>
+        <a href="{{ url_for('duplicates') }}" class="nav-link"><i class="fa-solid fa-copy"></i> Duplicates</a>
+        <div class="mobile-divider"></div>
+        <a href="{{ url_for('about') }}"   class="nav-link"><i class="fa-solid fa-circle-info"></i> About</a>
+        <a href="{{ url_for('contact') }}" class="nav-link"><i class="fa-solid fa-headset"></i> Support</a>
+        <div class="mobile-divider"></div>
+        <a href="{{ url_for('logout') }}" class="nav-link" style="color:var(--red)"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+    </div>
+
+    <main>
+        <div class="page-header animate-in">
+            <div class="page-eyebrow"><span class="eyebrow-dot"></span><span class="eyebrow-label">File Ingestion</span></div>
+            <h1 class="page-title">Upload Files</h1>
+            <p class="page-subtitle">Select a file type, then upload for instant ML-powered duplicate detection.</p>
+        </div>
+
+        <!-- Type cards -->
+        <div class="type-grid animate-in delay-1" style="grid-template-columns:repeat(5,1fr);">
+            <div class="type-card active" id="btn-text" onclick="selectFileType('text')">
+                <div class="type-card-icon"><i class="fa-solid fa-file-lines"></i></div>
+                <div class="type-card-name">Documents</div>
+                <div class="type-card-ext">TXT · DOCX · MD</div>
+            </div>
+            <div class="type-card" id="btn-pdf" onclick="selectFileType('pdf')">
+                <div class="type-card-icon"><i class="fa-solid fa-file-pdf"></i></div>
+                <div class="type-card-name">PDF</div>
+                <div class="type-card-ext">PDF</div>
+            </div>
+            <div class="type-card" id="btn-image" onclick="selectFileType('image')">
+                <div class="type-card-icon"><i class="fa-solid fa-image"></i></div>
+                <div class="type-card-name">Images</div>
+                <div class="type-card-ext">JPG · PNG · WEBP</div>
+            </div>
+            <div class="type-card" id="btn-audio" onclick="selectFileType('audio')">
+                <div class="type-card-icon"><i class="fa-solid fa-music"></i></div>
+                <div class="type-card-name">Audio</div>
+                <div class="type-card-ext">MP3 · WAV · FLAC</div>
+            </div>
+            <div class="type-card" id="btn-other" onclick="selectFileType('other')">
+                <div class="type-card-icon"><i class="fa-solid fa-database"></i></div>
+                <div class="type-card-name">Data Files</div>
+                <div class="type-card-ext">CSV · JSON · XML</div>
+            </div>
+        </div>
+
+        <!-- Image subtype -->
+        <div class="subtype-section hidden-section" id="image-subtype-section">
+            <div class="subtype-label">What kind of image are you uploading?</div>
+            <div class="subtype-grid">
+                <div class="subtype-card active" id="sub-mark_list" data-subtype="mark_list" onclick="selectImageSubtype('mark_list')">
+                    <div class="subtype-check"><i class="fa-solid fa-check"></i></div>
+                    <div class="subtype-icon"><i class="fa-solid fa-table-list"></i></div>
+                    <div class="subtype-name">Mark List</div>
+                    <div class="subtype-desc">Student grade sheet<br>or results table</div>
+                </div>
+                <div class="subtype-card" id="sub-fee_receipt" data-subtype="fee_receipt" onclick="selectImageSubtype('fee_receipt')">
+                    <div class="subtype-check"><i class="fa-solid fa-check"></i></div>
+                    <div class="subtype-icon"><i class="fa-solid fa-receipt"></i></div>
+                    <div class="subtype-name">Fee Receipt</div>
+                    <div class="subtype-desc">Payment or fee<br>acknowledgement</div>
+                </div>
+                <div class="subtype-card" id="sub-general" data-subtype="general" onclick="selectImageSubtype('general')">
+                    <div class="subtype-check"><i class="fa-solid fa-check"></i></div>
+                    <div class="subtype-icon"><i class="fa-solid fa-camera"></i></div>
+                    <div class="subtype-name">General Photo</div>
+                    <div class="subtype-desc">Stills, portraits,<br>or any other image</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Drop zone -->
+        <div class="drop-zone animate-in delay-2" id="drop-zone">
+            <div class="drop-zone-ring"></div>
+            <input type="file" id="file-input" class="hidden">
+            <div class="drop-zone-inner">
+                <div class="upload-icon-wrap"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                <h2 class="drop-title">Drop your file here</h2>
+                <p class="drop-desc">or browse from your computer to begin analysis</p>
+                <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
+                    <i class="fa-solid fa-folder-open"></i> Browse Files
+                </button>
+                <p class="drop-mode">
+                    Mode: <span id="selected-type" class="drop-mode-value">DOCUMENTS</span>
+                    <span id="selected-subtype-badge" class="subtype-badge"></span>
+                </p>
+                <div class="drop-hint">
+                    <span class="drop-hint-tag"><i class="fa-solid fa-shield-halved"></i> Secure Upload</span>
+                    <span class="drop-hint-tag"><i class="fa-solid fa-bolt"></i> Instant Analysis</span>
+                    <span class="drop-hint-tag"><i class="fa-solid fa-brain"></i> ML-Powered</span>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Progress Modal -->
+<div id="progress-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+        <div class="modal-icon mi-violet"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
+        <div class="modal-title">Analyzing file...</div>
+        <p class="modal-desc" id="progress-desc">Running ML similarity pipeline against the database.</p>
+        <div class="progress-track"><div id="progress-bar" class="progress-fill" style="width:0%"></div></div>
+        <p id="progress-text" class="progress-text">0%</p>
+    </div>
+</div>
+
+<!-- Result Modal -->
+<div id="result-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+        <div id="modal-icon-bg" class="modal-icon"><i id="modal-icon"></i></div>
+        <div id="modal-status" class="modal-title"></div>
+        <p class="modal-desc">Similarity analysis complete</p>
+        <div class="result-data-box">
+            <div class="result-row"><span class="result-key">Match Score</span><span id="modal-score" class="result-score"></span></div>
+            <div class="result-row"><span class="result-key">Uploaded File</span><span class="result-val" id="modal-filename"></span></div>
+            <div class="result-row" id="modal-subtype-row" style="display:none;"><span class="result-key">Image Category</span><span class="result-val" id="modal-subtype-val"></span></div>
+            <div class="result-row"><span class="result-key">Matched Against</span><span class="result-val" id="modal-match"></span></div>
+        </div>
+        <div class="modal-actions">
+            <button onclick="closeModal()" class="btn btn-ghost">Close</button>
+            <a href="{{ url_for('duplicates') }}" class="btn btn-primary">View Results <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div id="error-modal" class="modal-overlay hidden">
+    <div class="modal-box modal-danger">
+        <div class="modal-icon mi-red"><i class="fa-solid fa-circle-xmark"></i></div>
+        <div class="modal-title">Upload Failed</div>
+        <p id="error-message" class="modal-desc">Something went wrong.</p>
+        <button onclick="document.getElementById('error-modal').classList.add('hidden')" class="btn btn-ghost w-full">Try Again</button>
+    </div>
+</div>
+
+<!-- Cross-format Modal -->
+<div id="crossformat-modal" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width:460px;">
+        <div class="modal-icon" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.25);color:#f59e0b;">
+            <i class="fa-solid fa-file-circle-question"></i>
+        </div>
+        <div class="modal-title" style="color:#f59e0b;">Same Content, Different Format</div>
+        <p class="modal-desc" style="text-align:left;line-height:1.75;">The content of your uploaded file matches an existing file in a <strong>different format</strong> in the database.</p>
+        <div id="cf-info-box" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:14px 0 20px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.9;">
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">Your file</span><span id="cf-uploaded" style="color:var(--text);font-weight:600;"></span></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">Matched against</span><span id="cf-matched" style="color:var(--text);font-weight:600;"></span></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">Similarity score</span><span id="cf-score" style="color:#f59e0b;font-weight:700;"></span></div>
+        </div>
+        <p class="modal-desc" style="font-size:12px;margin-bottom:20px;">What would you like to do with the uploaded file?</p>
+        <div class="modal-actions" style="grid-template-columns:1fr 1fr;">
+            <button id="cf-discard-btn" class="btn btn-ghost" style="border-color:rgba(239,68,68,0.3);color:#ef4444;" onclick="confirmCrossFormat('discard')"><i class="fa-solid fa-trash"></i> Discard It</button>
+            <button id="cf-keep-btn"    class="btn btn-primary" style="background:#f59e0b;box-shadow:0 4px 14px rgba(245,158,11,0.3);" onclick="confirmCrossFormat('keep')"><i class="fa-solid fa-floppy-disk"></i> Keep Both</button>
+        </div>
+        <p style="font-size:10.5px;color:var(--muted);text-align:center;margin-top:14px;font-family:'JetBrains Mono',monospace;">DISCARD removes the new file · KEEP BOTH stores it alongside the existing one</p>
+    </div>
+</div>
+
+<script>
+let selectedFileType     = 'text';
+let selectedImageSubtype = 'mark_list';
+const typeLabels   = { text:'DOCUMENTS', pdf:'PDF', image:'IMAGES', audio:'AUDIO', other:'DATA FILES' };
+const subtypeLabels = { mark_list:'MARK LIST', fee_receipt:'FEE RECEIPT', general:'GENERAL PHOTO' };
+const subtypeProgressMsg = {
+    mark_list:'Comparing against mark lists in the database...',
+    fee_receipt:'Comparing against fee receipts in the database...',
+    general:'Comparing against general photos in the database...',
+};
+const subtypeBadgeStyle = {
+    mark_list:   { bg:'rgba(20,184,166,0.12)',  color:'#14b8a6', border:'rgba(20,184,166,0.25)' },
+    fee_receipt: { bg:'rgba(59,130,246,0.12)',  color:'#3b82f6', border:'rgba(59,130,246,0.25)' },
+    general:     { bg:'rgba(245,200,66,0.12)',  color:'#f5c842', border:'rgba(245,200,66,0.25)' },
+};
+
+function toggleMobileNav(){ document.getElementById('mobile-nav').classList.toggle('open'); }
+
+function selectFileType(type) {
+    selectedFileType = type;
+    document.querySelectorAll('.type-card').forEach(c => c.classList.remove('active'));
+    document.getElementById('btn-' + type).classList.add('active');
+    document.getElementById('selected-type').textContent = typeLabels[type];
+    const acceptMap = { text:'.txt,.doc,.docx,.md', pdf:'.pdf', image:'.jpg,.jpeg,.png,.webp,.bmp', audio:'.mp3,.wav,.ogg,.flac', other:'.csv,.json,.xml' };
+    document.getElementById('file-input').setAttribute('accept', acceptMap[type] || '*');
+    const section = document.getElementById('image-subtype-section');
+    const badge   = document.getElementById('selected-subtype-badge');
+    if (type === 'image') { section.classList.remove('hidden-section'); updateSubtypeBadge(); }
+    else { section.classList.add('hidden-section'); badge.style.display = 'none'; }
+}
+
+function selectImageSubtype(sub) {
+    selectedImageSubtype = sub;
+    document.querySelectorAll('.subtype-card').forEach(c => c.classList.remove('active'));
+    document.getElementById('sub-' + sub).classList.add('active');
+    updateSubtypeBadge();
+}
+
+function updateSubtypeBadge() {
+    const badge = document.getElementById('selected-subtype-badge');
+    const s = subtypeBadgeStyle[selectedImageSubtype];
+    badge.textContent = subtypeLabels[selectedImageSubtype];
+    badge.style.display = 'inline-block';
+    badge.style.background = s.bg; badge.style.color = s.color; badge.style.borderColor = s.border;
+}
+
+async function uploadFile(file) {
+    const progressModal = document.getElementById('progress-modal');
+    progressModal.classList.remove('hidden');
+    document.getElementById('result-modal').classList.add('hidden');
+    document.getElementById('progress-desc').textContent =
+        selectedFileType === 'image' ? subtypeProgressMsg[selectedImageSubtype] : 'Running ML similarity pipeline against the database.';
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', selectedFileType);
+    if (selectedFileType === 'image') formData.append('image_subtype', selectedImageSubtype);
+    try {
+        const bar = document.getElementById('progress-bar');
+        const txt = document.getElementById('progress-text');
+        let w = 0;
+        const iv = setInterval(() => { if(w>=90) clearInterval(iv); else { w+=5; bar.style.width=w+'%'; txt.textContent=w+'%'; } }, 50);
+        const res  = await fetch('/api/upload', { method:'POST', body:formData });
+        const data = await res.json();
+        clearInterval(iv); bar.style.width='100%'; txt.textContent='100%';
+        setTimeout(() => {
+            progressModal.classList.add('hidden');
+            if (data.success) {
+                if (data.needs_confirmation && data.cross_format) showCrossFormatModal(data, file.name);
+                else showResultModal(data, file.name);
+            } else { showErrorModal(data.message || 'Upload failed'); }
+        }, 500);
+    } catch(err) { progressModal.classList.add('hidden'); showErrorModal('Server connection error. Please try again.'); }
+}
+
+function showResultModal(data, filename) {
+    const iconBg = document.getElementById('modal-icon-bg');
+    const icon   = document.getElementById('modal-icon');
+    const status = document.getElementById('modal-status');
+    const score  = document.getElementById('modal-score');
+    iconBg.className = 'modal-icon'; status.className = 'modal-title'; score.className = 'result-score';
+    if (data.status === 'Duplicate') {
+        iconBg.classList.add('mi-red'); icon.className='fa-solid fa-triangle-exclamation';
+        status.classList.add('text-red'); score.classList.add('text-red');
+    } else if (data.status === 'Near Duplicate') {
+        iconBg.classList.add('mi-yellow'); icon.className='fa-solid fa-clone';
+        status.classList.add('text-yellow'); score.classList.add('text-yellow');
+    } else {
+        iconBg.classList.add('mi-green'); icon.className='fa-solid fa-check';
+        status.classList.add('text-green'); score.classList.add('text-green');
+    }
+    status.textContent = data.status; score.textContent = data.similarity + '%';
+    document.getElementById('modal-filename').textContent = filename;
+    document.getElementById('modal-match').textContent = (data.matched_file && data.matched_file !== 'None') ? data.matched_file : 'No Match Found';
+    const subRow = document.getElementById('modal-subtype-row');
+    if (data.image_subtype) { document.getElementById('modal-subtype-val').textContent = data.image_subtype; subRow.style.display='flex'; }
+    else { subRow.style.display='none'; }
+    document.getElementById('result-modal').classList.remove('hidden');
+}
+function closeModal() { document.getElementById('result-modal').classList.add('hidden'); }
+
+let _pendingTempFilename = null;
+function showCrossFormatModal(data, filename) {
+    _pendingTempFilename = data.temp_filename;
+    const clean = (n) => (n && n.length > 33 && n[32]==='_') ? n.slice(33) : n;
+    document.getElementById('cf-uploaded').textContent = clean(filename)||filename;
+    document.getElementById('cf-matched').textContent  = clean(data.matched_file)||data.matched_file;
+    document.getElementById('cf-score').textContent    = data.similarity+'%';
+    document.getElementById('crossformat-modal').classList.remove('hidden');
+}
+async function confirmCrossFormat(action) {
+    if (!_pendingTempFilename) return;
+    const keepBtn=document.getElementById('cf-keep-btn'); const discardBtn=document.getElementById('cf-discard-btn');
+    keepBtn.disabled=discardBtn.disabled=true;
+    keepBtn.innerHTML    = action==='keep'    ? '<i class="fa-solid fa-circle-notch fa-spin"></i>' : keepBtn.innerHTML;
+    discardBtn.innerHTML = action==='discard' ? '<i class="fa-solid fa-circle-notch fa-spin"></i>' : discardBtn.innerHTML;
+    try {
+        const res = await fetch('/api/confirm_store',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,temp_filename:_pendingTempFilename})});
+        await res.json();
+        document.getElementById('crossformat-modal').classList.add('hidden');
+        if (action==='keep') showToastMsg('File kept. Both formats are now stored in the database.','success');
+        else showToastMsg('File discarded. The existing version has been kept.','info');
+    } catch(err){ showErrorModal('Server error while confirming. Please check the duplicates page.'); }
+    finally {
+        keepBtn.disabled=discardBtn.disabled=false;
+        keepBtn.innerHTML='<i class="fa-solid fa-floppy-disk"></i> Keep Both';
+        discardBtn.innerHTML='<i class="fa-solid fa-trash"></i> Discard It';
+        _pendingTempFilename=null;
+    }
+}
+function showToastMsg(msg, type) {
+    const colours = { success:'#10b981', info:'#3b82f6', error:'#ef4444' };
+    const toast = document.createElement('div');
+    toast.style.cssText = `position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#0f172a;color:#f1f5f9;padding:13px 24px;border-radius:14px;font-family:'JetBrains Mono',monospace;font-size:12px;border-left:4px solid ${colours[type]||colours.info};box-shadow:0 10px 36px rgba(0,0,0,0.30);z-index:9999;white-space:nowrap;animation:fadeUp 0.3s ease both;`;
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3500);
+}
+function showErrorModal(msg) {
+    document.getElementById('error-message').textContent = msg;
+    document.getElementById('error-modal').classList.remove('hidden');
+}
+
+const drop  = document.getElementById('drop-zone');
+const input = document.getElementById('file-input');
+drop.addEventListener('click', e => { if(e.target.tagName!=='BUTTON' && !e.target.closest('button')) input.click(); });
+input.addEventListener('change', e => { if(e.target.files[0]) uploadFile(e.target.files[0]); });
+drop.addEventListener('dragover',  e => { e.preventDefault(); drop.classList.add('dragover'); });
+drop.addEventListener('dragleave', e => { e.preventDefault(); drop.classList.remove('dragover'); });
+drop.addEventListener('drop', e => {
+    e.preventDefault(); drop.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) uploadFile(file);
+});
+</script>
+<footer class="app-footer">
+    <div class="app-footer-inner">
+        <a href="{{ url_for('home') }}" class="footer-brand">
+            <div class="footer-brand-mark"><i class="fa-solid fa-layer-group"></i></div>
+            <div>
+                <div class="footer-brand-name">DeDuplication ML</div>
+                <div class="footer-brand-sub">AI Detection Engine</div>
+            </div>
+        </a>
+        <nav class="footer-links">
+            <a href="{{ url_for('about') }}"   class="footer-link"><i class="fa-solid fa-circle-info" style="font-size:10px;"></i> About</a>
+            <div class="footer-link-divider"></div>
+            <a href="{{ url_for('contact') }}" class="footer-link"><i class="fa-solid fa-headset" style="font-size:10px;"></i> Support</a>
+        </nav>
+        <div class="footer-copy">© 2025 <span>DeDuplication ML</span> · All rights reserved</div>
+    </div>
+</footer>
+</body>
+</html>

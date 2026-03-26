@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About — DeDupe ML</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .tech-section-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.14em;
+            color: var(--subtle);
+            padding: 10px 20px 6px;
+        }
+        .tech-group-divider { height: 1px; background: var(--border); margin: 4px 20px; }
+
+        .tech-tag {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 3px 10px; border-radius: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px; font-weight: 600; white-space: nowrap;
+        }
+        .tag-blue   { background: var(--accent-lt); color: var(--accent); border: 1px solid var(--accent-md); }
+        .tag-violet { background: var(--violet-lt); color: var(--violet); border: 1px solid #DDD6FE; }
+        .tag-green  { background: var(--green-lt);  color: var(--green);  border: 1px solid #A7F3D0; }
+        .tag-yellow { background: var(--yellow-lt); color: var(--yellow); border: 1px solid #FDE68A; }
+        .tag-red    { background: var(--red-lt);    color: var(--red);    border: 1px solid #FECACA; }
+        .tag-slate  { background: var(--surface2);  color: var(--text2);  border: 1px solid var(--border2); }
+
+        .stack-row {
+            display: flex; align-items: flex-start; gap: 14px;
+            padding: 13px 20px; border-bottom: 1px solid var(--border);
+            transition: background var(--ease);
+        }
+        .stack-row:last-child { border-bottom: none; }
+        .stack-row:hover { background: var(--surface2); }
+        .stack-icon {
+            width: 34px; height: 34px; border-radius: var(--r-md);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; flex-shrink: 0; margin-top: 1px;
+        }
+        .stack-body { flex: 1; min-width: 0; }
+        .stack-title { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 3px; }
+        .stack-desc  { font-size: 11.5px; color: var(--muted); line-height: 1.55; margin-bottom: 8px; }
+        .stack-tags  { display: flex; flex-wrap: wrap; gap: 5px; }
+
+        .threshold-bar-wrap { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+        
+        .threshold-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+        .threshold-label { font-size: 12.5px; font-weight: 600; }
+        .threshold-track { height: 6px; background: var(--surface2); border-radius: 6px; overflow: hidden; }
+        .threshold-fill  { height: 100%; border-radius: 6px; }
+    </style>
+</head>
+<body>
+<div class="app-shell">
+
+    <!-- TOP NAVBAR -->
+    <nav class="topbar">
+        <div class="topbar-inner">
+            <a href="{{ url_for('dashboard') }}" class="topbar-brand">
+                <div class="topbar-logo-mark"><i class="fa-solid fa-layer-group"></i></div>
+                <div class="topbar-brand-text">
+                    <div class="logo-name">DeDupe ML</div>
+                    <div class="logo-sub">AI Detection</div>
+                </div>
+            </a>
+            <div class="topbar-nav">
+
+                <a href="{{ url_for('home') }}" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="{{ url_for('dashboard') }}" class="nav-link"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+                <a href="{{ url_for('upload') }}" class="nav-link"><i class="fa-solid fa-upload"></i> Upload</a>
+                <a href="{{ url_for('duplicates') }}" class="nav-link"><i class="fa-solid fa-copy"></i> Duplicates</a>
+                <div class="nav-divider"></div>
+                <a href="{{ url_for('about') }}" class="nav-link active"><i class="fa-solid fa-circle-info"></i> About</a>
+                <a href="{{ url_for('contact') }}" class="nav-link"><i class="fa-solid fa-headset"></i> Support</a>
+            </div>
+            <div class="topbar-right">
+                <div class="topbar-user">
+                    <div class="avatar">{{ user_name[0]|upper if user_name else 'U' }}</div>
+                    <div class="topbar-user-info">
+                        <div class="user-name">{{ user_name or 'User' }}</div>
+                        <div class="user-email">{{ user_email or '<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="6c191f091e2c09140d011c0009420f0301">[email&#160;protected]</a>' }}</div>
+                    </div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="logout-btn">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Logout</span>
+                </a>
+                <button class="topbar-hamburger" onclick="toggleMobileNav()" aria-label="Menu">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+    <div class="mobile-nav-drawer" id="mobile-nav">
+                <a href="{{ url_for('dashboard') }}" class="nav-link"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+        <a href="{{ url_for('upload') }}" class="nav-link"><i class="fa-solid fa-upload"></i> Upload</a>
+        <a href="{{ url_for('duplicates') }}" class="nav-link"><i class="fa-solid fa-copy"></i> Duplicates</a>
+        <div class="mobile-divider"></div>
+        <a href="{{ url_for('about') }}" class="nav-link active"><i class="fa-solid fa-circle-info"></i> About</a>
+        <a href="{{ url_for('contact') }}" class="nav-link"><i class="fa-solid fa-headset"></i> Support</a>
+        <div class="mobile-divider"></div>
+        <a href="{{ url_for('logout') }}" class="nav-link" style="color:var(--red)"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+    </div>
+
+    <main>
+        <div class="page-header animate-in">
+            <div class="page-eyebrow">
+                <span class="eyebrow-dot eyebrow-dot--violet"></span>
+                <span class="eyebrow-label">About</span>
+            </div>
+            <h1 class="page-title">DeDupe ML</h1>
+            <p class="page-subtitle">AI-powered deduplication — fast, accurate, and format-agnostic</p>
+        </div>
+
+        <!-- Hero -->
+        <div class="hero-band animate-in delay-1">
+            <div style="position:relative; z-index:1;">
+                <div class="hero-tag">v2.0 · Production Ready</div>
+                <h2 class="hero-title">AI-Powered Duplicate Detection</h2>
+                <p class="hero-desc">
+                    DeDupe ML leverages MinHash LSH, OpenCV, and Librosa to identify duplicate and near-duplicate files across text, images, audio, and documents — with 95%+ accuracy and millisecond latency.
+                </p>
+                <div class="hero-tags">
+                    <span class="chip chip-blue"><i class="fa-solid fa-circle" style="font-size:7px;"></i> 95%+ Accuracy</span>
+                    <span class="chip chip-violet"><i class="fa-solid fa-bolt" style="font-size:9px;"></i> O(1) Lookup</span>
+                    <span class="chip chip-unique"><i class="fa-solid fa-shapes" style="font-size:9px;"></i> Multi-Format</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature Cards -->
+        <div class="feature-grid animate-in delay-2">
+            <div class="feature-card">
+                <div class="feature-icon fi-blue"><i class="fa-regular fa-file-lines"></i></div>
+                <div class="feature-name">Multi-Format Support</div>
+                <div class="feature-desc">Text, images, PDFs, audio, CSV, JSON, XML and more — all handled natively by the pipeline.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon fi-violet"><i class="fa-solid fa-bolt"></i></div>
+                <div class="feature-name">Lightning Fast</div>
+                <div class="feature-desc">MinHash LSH delivers constant-time O(1) lookup — scales to millions of files without slowdown.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon fi-green"><i class="fa-solid fa-chart-bar"></i></div>
+                <div class="feature-name">High Accuracy</div>
+                <div class="feature-desc">Advanced ML models detect even subtle similarities with 95%+ precision across all supported formats.</div>
+            </div>
+        </div>
+
+        <!-- Tech Stack + Right Column -->
+        <div class="two-col-grid animate-in delay-3" style="margin-bottom:20px; align-items:start;">
+
+            <!-- Full Technology Stack Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div>
+                        <div class="panel-title">Technology Stack</div>
+                        <div class="panel-subtitle">All tools and libraries powering DeDupe ML</div>
+                    </div>
+                </div>
+
+                <!-- Frontend -->
+                <div class="tech-section-label">Frontend</div>
+                <div class="stack-row">
+                    <div class="stack-icon si-blue"><i class="fa-brands fa-html5"></i></div>
+                    <div class="stack-body">
+                        <div class="stack-title">HTML, CSS &amp; JavaScript</div>
+                        <div class="stack-desc">Responsive UI with semantic markup, custom CSS design system, and vanilla JS for interactivity and dynamic uploads.</div>
+                        <div class="stack-tags">
+                            <span class="tech-tag tag-blue"><i class="fa-brands fa-html5"></i> HTML5</span>
+                            <span class="tech-tag tag-blue"><i class="fa-brands fa-css3-alt"></i> CSS3</span>
+                            <span class="tech-tag tag-blue"><i class="fa-brands fa-js"></i> JavaScript</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tech-group-divider"></div>
+                <!-- Programming Language -->
+                <div class="tech-section-label">Programming Language</div>
+                <div class="stack-row">
+                    <div class="stack-icon" style="background:var(--yellow-lt); color:var(--yellow);"><i class="fa-brands fa-python"></i></div>
+                    <div class="stack-body">
+                        <div class="stack-title">Python</div>
+                        <div class="stack-desc">Primary backend language powering all ML pipelines, file processing logic, and REST API endpoints.</div>
+                        <div class="stack-tags">
+                            <span class="tech-tag tag-yellow"><i class="fa-brands fa-python"></i> Python 3.10+</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tech-group-divider"></div>
+                <!-- Web Framework -->
+                <div class="tech-section-label">Web Framework</div>
+                <div class="stack-row">
+                    <div class="stack-icon si-green"><i class="fa-solid fa-server"></i></div>
+                    <div class="stack-body">
+                        <div class="stack-title">Flask &amp; SQLAlchemy</div>
+                        <div class="stack-desc">Lightweight WSGI framework with robust ORM, OAuth 2.0 (GitHub) integration, and RESTful API routing.</div>
+                        <div class="stack-tags">
+                            <span class="tech-tag tag-green"><i class="fa-solid fa-circle-dot"></i> Flask</span>
+                            <span class="tech-tag tag-green"><i class="fa-solid fa-database"></i> SQLAlchemy</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tech-group-divider"></div>
+                <!-- ML Techniques -->
+                <div class="tech-section-label">Machine Learning Techniques</div>
+                <div class="stack-row">
+                    <div class="stack-icon si-violet"><i class="fa-solid fa-brain"></i></div>
+                    <div class="stack-body">
+                        <div class="stack-title">Scikit-Learn, MinHash &amp; LSH</div>
+                        <div class="stack-desc">Locality-Sensitive Hashing for near-duplicate detection in O(1) time. MinHash approximates Jaccard similarity across large file corpora without exhaustive comparison.</div>
+                        <div class="stack-tags">
+                            <span class="tech-tag tag-violet"><i class="fa-solid fa-circle-dot"></i> Scikit-Learn</span>
+                            <span class="tech-tag tag-violet"><i class="fa-solid fa-hashtag"></i> MinHash</span>
+                            <span class="tech-tag tag-violet"><i class="fa-solid fa-magnifying-glass"></i> Local Sensitive Hashing</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tech-group-divider"></div>
+                <!-- Libraries -->
+                <div class="tech-section-label">Libraries</div>
+                <div class="stack-row">
+                    <div class="stack-icon si-blue"><i class="fa-solid fa-square-root-variable"></i></div>
+                    <div class="stack-body">
+                        <div class="stack-title">NumPy &amp; DataSketch</div>
+                        <div class="stack-desc">Numerical computing foundations and efficient probabilistic data structures for similarity estimation at scale.</div>
+                        <div class="stack-tags">
+                            <span class="tech-tag tag-blue"><i class="fa-solid fa-circle-dot"></i> NumPy</span>
+                            <span class="tech-tag tag-blue"><i class="fa-solid fa-circle-dot"></i> DataSketch</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stack-row">
+                    <div class="stack-icon si-green"><i class="fa-solid fa-eye"></i></div>
+                    <div class="stack-body">
+                        <div class="stack-title">OpenCV &amp; Librosa</div>
+                        <div class="stack-desc">Computer vision for image feature extraction and perceptual hashing. MFCC-based audio fingerprinting for sound file deduplication.</div>
+                        <div class="stack-tags">
+                            <span class="tech-tag tag-green"><i class="fa-solid fa-image"></i> OpenCV</span>
+                            <span class="tech-tag tag-green"><i class="fa-solid fa-music"></i> Librosa</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stack-row">
+                    <div class="stack-icon" style="background:var(--red-lt); color:var(--red);"><i class="fa-solid fa-file-pdf"></i></div>
+                    <div class="stack-body">
+                        <div class="stack-title">Textract &amp; PyMuPDF</div>
+                        <div class="stack-desc">Document text extraction from PDFs, DOCX, and scanned files — enabling deduplication across all document formats.</div>
+                        <div class="stack-tags">
+                            <span class="tech-tag tag-slate"><i class="fa-solid fa-circle-dot"></i> Textract</span>
+                            <span class="tech-tag tag-red"><i class="fa-solid fa-file-pdf"></i> PyMuPDF</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div style="display:flex; flex-direction:column; gap:16px;">
+
+                <!-- How It Works -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">How It Works</div>
+                    </div>
+                    <div class="step-row">
+                        <div class="step-num sn-blue">1</div>
+                        <div class="step-body">
+                            <div class="tech-name">Upload &amp; Process</div>
+                            <div class="tech-desc">Files are parsed by type using Textract, PyMuPDF, OpenCV, or Librosa depending on format.</div>
+                        </div>
+                    </div>
+                    <div class="step-row">
+                        <div class="step-num sn-violet">2</div>
+                        <div class="step-body">
+                            <div class="tech-name">Feature Extraction</div>
+                            <div class="tech-desc">ML models extract tokens, color histograms, or MFCC spectral fingerprints based on file type.</div>
+                        </div>
+                    </div>
+                    <div class="step-row">
+                        <div class="step-num sn-green">3</div>
+                        <div class="step-body">
+                            <div class="tech-name">MinHash + LSH Search</div>
+                            <div class="tech-desc">DataSketch MinHash signatures queried via LSH buckets for O(1) approximate nearest-neighbour search.</div>
+                        </div>
+                    </div>
+                    <div class="step-row">
+                        <div class="step-num sn-yellow">4</div>
+                        <div class="step-body">
+                            <div class="tech-name">Classify &amp; Report</div>
+                            <div class="tech-desc">Results classified and stored. Scores displayed on the dashboard in real time.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Similarity Thresholds -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">Similarity Thresholds</div>
+                    </div>
+                    <div class="threshold-bar-wrap">
+                        <div class="threshold-row">
+                            <div class="threshold-top">
+                                <span class="threshold-label" style="color:var(--red);">Duplicate</span>
+                                <span class="chip chip-dup">≥ 70%</span>
+                            </div>
+                            <div class="threshold-track">
+                                <div class="threshold-fill" style="width:70%; background:var(--red);"></div>
+                            </div>
+                        </div>
+                        <div class="threshold-row">
+                            <div class="threshold-top">
+                                <span class="threshold-label" style="color:var(--yellow);">Near Duplicate</span>
+                                <span class="chip chip-near">50 – 70%</span>
+                            </div>
+                            <div class="threshold-track">
+                                <div class="threshold-fill" style="width:50%; background:var(--yellow);"></div>
+                            </div>
+                        </div>
+                        <div class="threshold-row">
+                            <div class="threshold-top">
+                                <span class="threshold-label" style="color:var(--green);">Unique</span>
+                                <span class="chip chip-unique">&lt; 50%</span>
+                            </div>
+                            <div class="threshold-track">
+                                <div class="threshold-fill" style="width:30%; background:var(--green);"></div>
+                            </div>
+                        </div>

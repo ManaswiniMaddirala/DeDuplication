@@ -1,0 +1,252 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support — DeDuplication ML</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>body{overflow-y:auto;}</style>
+</head>
+
+<body>
+<div class="app-shell">
+
+    <!-- TOP NAVBAR -->
+    <nav class="topbar">
+        <div class="topbar-inner">
+            <a href="{{ url_for('dashboard') }}" class="topbar-brand">
+                <div class="topbar-logo-mark"><i class="fa-solid fa-layer-group"></i></div>
+                <div class="topbar-brand-text">
+                    <div class="logo-name">DeDuplication ML</div>
+                    <div class="logo-sub">AI Detection</div>
+                </div>
+            </a>
+            <div class="topbar-nav">
+
+                <a href="{{ url_for('home') }}" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="{{ url_for('dashboard') }}" class="nav-link"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+                <a href="{{ url_for('upload') }}" class="nav-link"><i class="fa-solid fa-upload"></i> Upload</a>
+                <a href="{{ url_for('duplicates') }}" class="nav-link"><i class="fa-solid fa-copy"></i> Duplicates</a>
+                <div class="nav-divider"></div>
+                <a href="{{ url_for('about') }}" class="nav-link"><i class="fa-solid fa-circle-info"></i> About</a>
+                <a href="{{ url_for('contact') }}" class="nav-link active"><i class="fa-solid fa-headset"></i> Support</a>
+            </div>
+            <div class="topbar-right">
+                <div class="topbar-user">
+                    <div class="avatar">{{ user_name[0]|upper if user_name else 'U' }}</div>
+                    <div class="topbar-user-info">
+                        <div class="user-name">{{ user_name or 'User' }}</div>
+                        <div class="user-email">{{ user_email or 'user@example.com' }}</div>
+                    </div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="logout-btn">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Logout</span>
+                </a>
+                <button class="topbar-hamburger" onclick="toggleMobileNav()" aria-label="Menu">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+    <div class="mobile-nav-drawer" id="mobile-nav">
+                <a href="{{ url_for('dashboard') }}" class="nav-link"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+        <a href="{{ url_for('upload') }}" class="nav-link"><i class="fa-solid fa-upload"></i> Upload Files</a>
+        <a href="{{ url_for('duplicates') }}" class="nav-link"><i class="fa-solid fa-copy"></i> Duplicates</a>
+        <div class="mobile-divider"></div>
+        <a href="{{ url_for('about') }}" class="nav-link"><i class="fa-solid fa-circle-info"></i> About</a>
+        <a href="{{ url_for('contact') }}" class="nav-link active"><i class="fa-solid fa-headset"></i> Support</a>
+        <div class="mobile-divider"></div>
+        <a href="{{ url_for('logout') }}" class="nav-link" style="color:var(--red)"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+    </div>
+
+    <main>
+        <div class="page-header animate-in">
+            <div class="page-eyebrow">
+                <span class="eyebrow-dot eyebrow-dot--violet"></span>
+                <span class="eyebrow-label">Support</span>
+            </div>
+            <h1 class="page-title">Help Center</h1>
+            <p class="page-subtitle">Submit a support ticket and we'll get back to you fast.</p>
+        </div>
+
+        <div class="support-grid">
+
+            <!-- Ticket Form -->
+            <div class="panel animate-in delay-1" style="position:relative; overflow:hidden;">
+
+                <!-- Success overlay -->
+                <div id="ticket-success" class="success-overlay" style="display:none;">
+                    <div class="success-icon"><i class="fa-solid fa-check"></i></div>
+                    <div class="success-title">Ticket Submitted!</div>
+                    <div class="success-desc">Your request has been recorded. We'll respond within 24 hours.</div>
+                    <div class="ticket-ref-box">
+                        <div class="ticket-ref-label">Reference ID</div>
+                        <div id="display-ticket-id" class="ticket-ref-id">TKT-0000</div>
+                    </div>
+                    <button onclick="resetForm()" class="btn btn-ghost">Submit Another</button>
+                </div>
+
+                <div class="panel-header">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="width:32px; height:32px; background:var(--accent-lt); border:1px solid var(--accent-md); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--accent); font-size:13px; flex-shrink:0;">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </div>
+                        <div>
+                            <div class="panel-title">New Support Ticket</div>
+                            <div class="panel-subtitle">Avg. response time: &lt;24 hours</div>
+                        </div>
+                    </div>
+                </div>
+
+                <form id="ticket-form" class="form-body" style="display:flex; flex-direction:column; gap:18px;">
+                    <div class="form-row-2" style="margin-bottom:0;">
+                        <div>
+                            <label>Your Name</label>
+                            <input type="text" id="name" required value="{{ user_name or '' }}" placeholder="Jane Smith">
+                        </div>
+                        <div>
+                            <label>Your Email</label>
+                            <input type="email" id="email" required value="{{ user_email or '' }}" placeholder="jane@example.com">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Issue Type</label>
+                        <select id="subject">
+                            <option>Technical Issue</option>
+                            <option>Account Support</option>
+                            <option>Feature Request</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="message" required rows="5" placeholder="Describe your issue in detail..."></textarea>
+                    </div>
+                    <button type="submit" id="submit-btn" class="submit-btn">
+                        <span>Submit Ticket</span>
+                        <i class="fa-solid fa-arrow-right" style="font-size:11px;"></i>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Right Sidebar -->
+            <div class="support-aside animate-in delay-2">
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title" style="display:flex; align-items:center; gap:8px;">
+                            <i class="fa-solid fa-satellite-dish" style="color:var(--accent); font-size:13px;"></i>
+                            Contact Info
+                        </div>
+                    </div>
+                    <div class="contact-row">
+                        <div class="contact-icon"><i class="fa-solid fa-envelope"></i></div>
+                        <span class="contact-val">support@DeDuplication.ml</span>
+                    </div>
+                    <div class="contact-row">
+                        <div class="contact-icon"><i class="fa-solid fa-phone"></i></div>
+                        <span class="contact-val">+91 98765 43210</span>
+                    </div>
+                    <div class="contact-row">
+                        <div class="contact-icon"><i class="fa-solid fa-clock"></i></div>
+                        <span class="contact-val">24/7 Support Available</span>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title" style="display:flex; align-items:center; gap:8px;">
+                            <i class="fa-solid fa-circle-question" style="color:var(--accent); font-size:13px;"></i>
+                            Common Questions
+                        </div>
+                    </div>
+                    <details class="faq-item">
+                        <summary class="faq-summary">
+                            How do I reset the database?
+                            <i class="fa-solid fa-chevron-down faq-chevron"></i>
+                        </summary>
+                        <div class="faq-answer">Use the "Delete All" button on the Duplicates page to permanently wipe all files and history.</div>
+                    </details>
+                    <details class="faq-item">
+                        <summary class="faq-summary">
+                            What file types are supported?
+                            <i class="fa-solid fa-chevron-down faq-chevron"></i>
+                        </summary>
+                        <div class="faq-answer">TXT, PDF, DOCX, JPG, PNG, WEBP, WAV, MP3, FLAC, CSV, JSON, and XML are all fully supported.</div>
+                    </details>
+                    <details class="faq-item">
+                        <summary class="faq-summary">
+                            How accurate is the detection?
+                            <i class="fa-solid fa-chevron-down faq-chevron"></i>
+                        </summary>
+                        <div class="faq-answer">Our ML pipeline achieves 95%+ accuracy using MinHash LSH combined with format-specific feature extractors.</div>
+                    </details>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    document.getElementById('ticket-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('submit-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Submitting...';
+        const formData = {
+            name: document.getElementById('name').value,
+            email: document.getElementById('email').value,
+            subject: document.getElementById('subject').value,
+            message: document.getElementById('message').value
+        };
+        try {
+            const res = await fetch('/api/contact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('display-ticket-id').textContent = data.ticket_id;
+                document.getElementById('ticket-success').style.display = 'flex';
+            } else {
+                alert('Error: ' + data.message);
+                btn.disabled = false;
+                btn.innerHTML = '<span>Submit Ticket</span><i class="fa-solid fa-arrow-right" style="font-size:11px;"></i>';
+            }
+        } catch (err) {
+            alert('Server error. Please try again.');
+            btn.disabled = false;
+            btn.innerHTML = '<span>Submit Ticket</span><i class="fa-solid fa-arrow-right" style="font-size:11px;"></i>';
+        }
+    });
+
+    function resetForm() {
+        document.getElementById('ticket-success').style.display = 'none';
+        document.getElementById('ticket-form').reset();
+        const btn = document.getElementById('submit-btn');
+        btn.disabled = false;
+        btn.innerHTML = '<span>Submit Ticket</span><i class="fa-solid fa-arrow-right" style="font-size:11px;"></i>';
+    }
+</script>
+<script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+<footer class="app-footer">
+    <div class="app-footer-inner">
+        <a href="{{ url_for('home') }}" class="footer-brand">
+            <div class="footer-brand-mark"><i class="fa-solid fa-layer-group"></i></div>
+            <div>
+                <div class="footer-brand-name">DeDuplication ML</div>
+                <div class="footer-brand-sub">AI Detection Engine</div>
+            </div>
+        </a>
+        <nav class="footer-links">
+            <a href="{{ url_for('about') }}"   class="footer-link"><i class="fa-solid fa-circle-info" style="font-size:10px;"></i> About</a>
+            <div class="footer-link-divider"></div>
+            <a href="{{ url_for('contact') }}" class="footer-link"><i class="fa-solid fa-headset" style="font-size:10px;"></i> Support</a>
+        </nav>
+        <div class="footer-copy">© 2025 <span>DeDuplication ML</span> · All rights reserved</div>
+    </div>
+</footer>
+</body>
+</html>

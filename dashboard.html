@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — DeDuplication ML</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="app-shell">
+
+    <!-- TOP NAVBAR -->
+    <nav class="topbar">
+        <div class="topbar-inner">
+            <a href="{{ url_for('dashboard') }}" class="topbar-brand">
+                <div class="topbar-logo-mark"><i class="fa-solid fa-layer-group"></i></div>
+                <div class="topbar-brand-text">
+                    <div class="logo-name">DeDuplication ML</div>
+                    <div class="logo-sub">AI Detection</div>
+                </div>
+            </a>
+            <div class="topbar-nav">
+
+                <a href="{{ url_for('home') }}" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="{{ url_for('dashboard') }}" class="nav-link active"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+                <a href="{{ url_for('upload') }}" class="nav-link"><i class="fa-solid fa-upload"></i> Upload</a>
+                <a href="{{ url_for('duplicates') }}" class="nav-link"><i class="fa-solid fa-copy"></i> Duplicates</a>
+                <div class="nav-divider"></div>
+                <a href="{{ url_for('about') }}" class="nav-link"><i class="fa-solid fa-circle-info"></i> About</a>
+                <a href="{{ url_for('contact') }}" class="nav-link"><i class="fa-solid fa-headset"></i> Support</a>
+            </div>
+            <div class="topbar-right">
+                <div class="topbar-user">
+                    <div class="avatar">{{ user_name[0]|upper if user_name else 'U' }}</div>
+                    <div class="topbar-user-info">
+                        <div class="user-name">{{ user_name or 'User' }}</div>
+                        <div class="user-email">{{ user_email or 'user@example.com' }}</div>
+                    </div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="logout-btn">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Logout</span>
+                </a>
+                <button class="topbar-hamburger" onclick="toggleMobileNav()" aria-label="Menu">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+    <div class="mobile-nav-drawer" id="mobile-nav">
+                <a href="{{ url_for('dashboard') }}" class="nav-link active"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+        <a href="{{ url_for('upload') }}" class="nav-link"><i class="fa-solid fa-upload"></i> Upload</a>
+        <a href="{{ url_for('duplicates') }}" class="nav-link"><i class="fa-solid fa-copy"></i> Duplicates</a>
+        <div class="mobile-divider"></div>
+        <a href="{{ url_for('about') }}" class="nav-link"><i class="fa-solid fa-circle-info"></i> About</a>
+        <a href="{{ url_for('contact') }}" class="nav-link"><i class="fa-solid fa-headset"></i> Support</a>
+        <div class="mobile-divider"></div>
+        <a href="{{ url_for('logout') }}" class="nav-link" style="color:var(--red)"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+    </div>
+
+    <main>
+        <div class="page-header animate-in">
+            <div class="page-eyebrow">
+                <span class="eyebrow-dot"></span>
+                <span class="eyebrow-label">Live Dashboard</span>
+            </div>
+            <h1 class="page-title">Overview</h1>
+            <p class="page-subtitle">Real-time status of your deduplication pipeline</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card card-blue animate-in delay-1">
+                <div class="stat-icon si-blue"><i class="fa-regular fa-file-lines"></i></div>
+                <div class="stat-value">{{ total_files }}</div>
+                <div class="stat-label">Total Files</div>
+                <div class="stat-badge badge-blue"><i class="fa-solid fa-database"></i> In database</div>
+            </div>
+            <div class="stat-card card-green animate-in delay-2">
+                <div class="stat-icon si-green"><i class="fa-solid fa-bolt"></i></div>
+                <div class="stat-value sv-green">Online</div>
+                <div class="stat-label">ML Engine</div>
+                <div class="stat-badge badge-green"><i class="fa-solid fa-circle"></i> Active</div>
+            </div>
+            <div class="stat-card card-red animate-in delay-3">
+                <div class="stat-icon si-red"><i class="fa-solid fa-copy"></i></div>
+                <div class="stat-value sv-red">{{ duplicates_found }}</div>
+                <div class="stat-label">Duplicates Found</div>
+                <div class="stat-badge badge-red"><i class="fa-solid fa-triangle-exclamation"></i> Action needed</div>
+            </div>
+            <div class="stat-card card-violet animate-in delay-4">
+                <div class="stat-icon si-violet"><i class="fa-solid fa-shield-halved"></i></div>
+                <div class="stat-value sv-green">Active</div>
+                <div class="stat-label">Storage</div>
+                <div class="stat-badge badge-green"><i class="fa-solid fa-circle"></i> Monitored</div>
+            </div>
+        </div>
+
+        <div class="panel animate-in delay-5">
+            <div class="panel-header">
+                <div>
+                    <div class="panel-title">Recent Activity</div>
+                    <div class="panel-subtitle">Latest file scan results</div>
+                </div>
+                <a href="{{ url_for('duplicates') }}" class="panel-link">
+                    View all <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+
+            {% if history %}
+                {% for record in history %}
+                <div class="list-row">
+                    <div class="file-icon"><i class="fa-regular fa-file-lines"></i></div>
+                    <div class="list-row-info">
+                        <div class="list-row-name">{{ record.uploaded_file }}</div>
+                        <div class="list-row-meta">{{ record.timestamp.strftime('%Y-%m-%d · %H:%M') }}</div>
+                    </div>
+                    <span class="chip {% if record.status == 'Duplicate' %}chip-dup{% elif record.status == 'Near Duplicate' %}chip-near{% else %}chip-unique{% endif %}">
+                        {{ record.status }}
+                    </span>
+                    <div class="score {% if record.status == 'Duplicate' %}score-red{% elif record.status == 'Near Duplicate' %}score-yellow{% else %}score-green{% endif %}">
+                        {{ record.similarity }}%
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon"><i class="fa-regular fa-folder-open"></i></div>
+                    <div class="empty-title">No activity yet</div>
+                    <div class="empty-desc">Upload files to start detecting duplicates</div>
+                    <a href="{{ url_for('upload') }}" class="btn btn-primary mt-16">
+                        Upload Now <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </main>
+</div>
+<script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+<footer class="app-footer">
+    <div class="app-footer-inner">
+        <a href="{{ url_for('home') }}" class="footer-brand">
+            <div class="footer-brand-mark"><i class="fa-solid fa-layer-group"></i></div>
+            <div>
+                <div class="footer-brand-name">DeDuplication ML</div>
+                <div class="footer-brand-sub">AI Detection Engine</div>
+            </div>
+        </a>
+        <nav class="footer-links">
+            <a href="{{ url_for('about') }}"   class="footer-link"><i class="fa-solid fa-circle-info" style="font-size:10px;"></i> About</a>
+            <div class="footer-link-divider"></div>
+            <a href="{{ url_for('contact') }}" class="footer-link"><i class="fa-solid fa-headset" style="font-size:10px;"></i> Support</a>
+        </nav>
+        <div class="footer-copy">© 2025 <span>DeDuplication ML</span> · All rights reserved</div>
+    </div>
+</footer>
+</body>
+</html>

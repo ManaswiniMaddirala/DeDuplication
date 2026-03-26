@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In — DeDuplication ML</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
+
+        :root {
+            /* Premium Light Palette */
+            --bg:          #F3F6F9;
+            --surface:     #FFFFFF;
+            --surface-alt: #F8FAFC;
+            --border:      #E2E8F0;
+            --border-hover:#CBD5E1;
+            
+            /* Brand Accents */
+            --accent:      #4F46E5; /* Indigo */
+            --accent-dk:   #4338CA;
+            --accent-lt:   #EEF2FF;
+            --violet:      #7C3AED;
+            --teal:        #0D9488;
+            
+            /* Typography */
+            --text-main:   #0F172A;
+            --text-muted:  #64748B;
+            --text-subtle: #94A3B8;
+            
+            /* Status */
+            --red:         #EF4444;
+            --green:       #10B981;
+            
+            /* Radius & Shadows */
+            --r-md: 8px; --r-lg: 12px; --r-xl: 16px; --r-2xl: 24px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+            --shadow-lg: 0 20px 25px -5px rgba(0,0,0,0.05), 0 10px 10px -5px rgba(0,0,0,0.02);
+            --shadow-float: 0 30px 60px -12px rgba(79, 70, 229, 0.15);
+            
+            --trans: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+            display: flex; align-items: center; justify-content: center;
+            min-height: 100vh; padding: 24px;
+            position: relative; overflow: hidden;
+        }
+
+        /* Sophisticated Ambient Background */
+        body::before {
+            content: ''; position: fixed; inset: 0;
+            background: 
+                radial-gradient(circle at 15% 50%, rgba(79, 70, 229, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(124, 58, 237, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        body::after {
+            content: ''; position: fixed; inset: 0;
+            background-image: radial-gradient(var(--border) 1px, transparent 1px);
+            background-size: 32px 32px;
+            opacity: 0.4;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Main Container */
+        .auth-wrapper {
+            display: flex; width: 100%; max-width: 1000px;
+            min-height: 600px; border-radius: var(--r-2xl);
+            background: var(--surface);
+            box-shadow: var(--shadow-float);
+            position: relative; z-index: 10;
+            overflow: hidden;
+            animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        @keyframes slideUpFade {
+            0% { opacity: 0; transform: translateY(40px) scale(0.98); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* ── Left Panel (Brand) ── */
+        .brand-panel {
+            width: 45%; flex-shrink: 0;
+            background: linear-gradient(145deg, #0F172A 0%, #1E1B4B 100%);
+            padding: 56px 48px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            position: relative; overflow: hidden;
+            color: #FFFFFF;
+        }
+        
+        /* Inner panel glowing orbs */
+        .brand-panel::before {
+            content: ''; position: absolute; top: -20%; left: -10%;
+            width: 300px; height: 300px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.4) 0%, transparent 70%);
+            filter: blur(40px); pointer-events: none;
+        }
+        .brand-panel::after {
+            content: ''; position: absolute; bottom: -10%; right: -20%;
+            width: 250px; height: 250px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.3) 0%, transparent 70%);
+            filter: blur(40px); pointer-events: none;
+        }
+
+        .brand-top { position: relative; z-index: 2; }
+        .brand-logo {
+            width: 48px; height: 48px;
+            background: linear-gradient(135deg, #6366F1, #A855F7);
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            font-size: 20px; color: #fff; margin-bottom: 24px;
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .brand-name {
+            font-weight: 800; font-size: 28px;
+            letter-spacing: -0.03em; margin-bottom: 8px;
+        }
+        .brand-tag {
+            font-family: 'JetBrains Mono', monospace; font-size: 11px;
+            color: #818CF8; text-transform: uppercase; letter-spacing: 0.15em;
+            font-weight: 600;
+        }
+        .brand-desc {
+            font-size: 15px; color: #94A3B8; line-height: 1.6; margin-top: 24px;
+        }
+
+        /* Glassmorphism Features Card */
+        .features-glass {
+            position: relative; z-index: 2;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--r-xl);
+            padding: 24px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+            margin-top: 40px;
+        }
+        .brand-feat {
+            display: flex; align-items: center; gap: 12px;
+            font-size: 14px; font-weight: 500; color: #E2E8F0;
+            margin-bottom: 16px;
+        }
+        .brand-feat:last-child { margin-bottom: 0; }
+        .feat-icon {
+            width: 28px; height: 28px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; flex-shrink: 0;
+        }
+        .fi-blue { background: rgba(99,102,241,0.15); color: #818CF8; border: 1px solid rgba(99,102,241,0.3); }
+        .fi-violet { background: rgba(168,85,247,0.15); color: #C084FC; border: 1px solid rgba(168,85,247,0.3); }
+        .fi-teal { background: rgba(20,184,166,0.15); color: #2DD4BF; border: 1px solid rgba(20,184,166,0.3); }
+
+        .brand-bottom { position: relative; z-index: 2; margin-top: 40px; }
+        .brand-version {
+            font-family: 'JetBrains Mono', monospace; font-size: 10px;
+            color: #64748B; text-transform: uppercase; letter-spacing: 0.1em;
+        }
+
+        /* ── Right Panel (Form) ── */
+        .form-panel {
+            flex: 1; padding: 64px 72px;
+            display: flex; flex-direction: column; justify-content: center;
+            background: var(--surface);
+        }
+
+        .form-eyebrow {
+            font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 12px;
+        }
+        .form-title {
+            font-weight: 800; font-size: 32px;
+            letter-spacing: -0.04em; color: var(--text-main); margin-bottom: 8px;
+        }
+        .form-subtitle { font-size: 15px; color: var(--text-muted); margin-bottom: 40px; }
+
+        /* Segmented Control Tabs */
+        .tab-row {
+            display: flex; background: var(--surface-alt); border: 1px solid var(--border);
+            border-radius: 14px; padding: 6px; margin-bottom: 32px;
+        }
+        .tab-btn {
+            flex: 1; padding: 12px; border-radius: 10px;
+            font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 700;
+            border: none; cursor: pointer; transition: var(--trans);
+            color: var(--text-muted); background: transparent;
+        }
+        .tab-btn:hover:not(.active) { color: var(--text-main); }
+        .tab-btn.active {
+            background: var(--surface); color: var(--accent);
+            box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+        }
+
+        /* Form Inputs */
+        .form-group { margin-bottom: 24px; animation: slideUpFade 0.5s ease both; }
+        .form-group:nth-child(2) { animation-delay: 0.1s; }
+        .form-group:nth-child(3) { animation-delay: 0.2s; }
+
+        .field-label {
+            display: block; font-size: 13px; font-weight: 600;
+            color: var(--text-main); margin-bottom: 8px;
+        }
+        .input-wrap { position: relative; }
+        .input-icon {
+            position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+            color: var(--text-subtle); font-size: 14px; pointer-events: none; transition: var(--trans);
+        }
+        .field-input {
+            width: 100%; height: 48px; background: var(--surface-alt);
+            border: 1px solid var(--border); border-radius: var(--r-lg);
+            color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 15px; padding: 0 16px 0 44px;
+            transition: var(--trans); outline: none;
+        }
+        .field-input::placeholder { color: var(--text-subtle); }
+        .field-input:hover { border-color: var(--border-hover); }
+        .field-input:focus {
+            background: var(--surface);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px var(--accent-lt);
+        }
+        .input-wrap:focus-within .input-icon { color: var(--accent); }
+
+        /* Submit Button */
+        .submit-btn {
+            width: 100%; height: 48px; margin-top: 8px;
+            background: linear-gradient(135deg, var(--accent), var(--violet));
+            color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700;
+            font-size: 15px; border-radius: var(--r-lg); border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: var(--trans); 
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.2), 0 4px 14px rgba(79, 70, 229, 0.4);
+            animation: slideUpFade 0.5s ease 0.3s both;
+        }
+        .submit-btn:hover { 
+            transform: translateY(-2px); 
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.2), 0 8px 20px rgba(79, 70, 229, 0.5); 
+        }
+        .submit-btn:active { transform: translateY(0); }
+        .submit-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* OR Divider */
+        .or-divider { 
+            position: relative; margin: 32px 0; text-align: center; 
+            animation: slideUpFade 0.5s ease 0.4s both;
+        }
+        .or-divider::before {
+            content: ''; position: absolute; top: 50%; left: 0; right: 0;
+            height: 1px; background: var(--border);
+        }
+        .or-text {
+            position: relative; display: inline-block;
+            background: var(--surface); padding: 0 16px;
+            font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600;
+            color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.1em;
+        }
+
+        /* GitHub Button */
+        .github-btn {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%; height: 48px; background: var(--surface); color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 15px;
+            border-radius: var(--r-lg); border: 1px solid var(--border);
+            text-decoration: none; transition: var(--trans);
+            box-shadow: var(--shadow-sm);
+            animation: slideUpFade 0.5s ease 0.5s both;
+        }
+        .github-btn:hover {
+            border-color: var(--border-hover); background: var(--surface-alt);
+            transform: translateY(-2px); box-shadow: var(--shadow-md);
+        }
+        .github-btn i { font-size: 18px; color: #181717; } /* GitHub brand color */
+
+        /* Toast Modal */
+        .hidden { display: none !important; }
+        .toast-overlay {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            display: flex; align-items: center; justify-content: center; z-index: 200;
+        }
+        .toast-box {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--r-2xl); padding: 40px;
+            max-width: 400px; width: 100%; margin: 16px; text-align: center;
+            animation: toastPop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: var(--shadow-lg);
+        }
+        @keyframes toastPop {
+            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .toast-icon {
+            width: 64px; height: 64px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; margin: 0 auto 24px;
+        }
+        .ti-success { background: #D1FAE5; color: var(--green); }
+        .ti-error   { background: #FEE2E2; color: var(--red); }
+        .toast-title { font-weight: 800; font-size: 20px; letter-spacing: -0.02em; color: var(--text-main); margin-bottom: 8px; }
+        .toast-msg   { font-size: 15px; color: var(--text-muted); line-height: 1.6; margin-bottom: 32px; }
+        .toast-ok {
+            width: 100%; padding: 12px; background: var(--surface-alt); color: var(--text-main);
+            border: 1px solid var(--border); border-radius: var(--r-lg);
+            font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px; font-weight: 700;
+            cursor: pointer; transition: var(--trans);
+        }
+        .toast-ok:hover { border-color: var(--border-hover); background: #F1F5F9; }
+
+        /* Responsive */
+        @media(max-width:860px) {
+            .brand-panel { display: none; }
+            .form-panel  { padding: 48px; }
+            .auth-wrapper { max-width: 500px; min-height: auto; }
+        }
+        @media(max-width:480px) {
+            .form-panel { padding: 32px 24px; }
+            body { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="toast-overlay" class="toast-overlay hidden">
+    <div class="toast-box">
+        <div id="toast-icon" class="toast-icon"></div>
+        <div id="toast-title" class="toast-title"></div>
+        <p  id="toast-msg"   class="toast-msg"></p>
+        <button onclick="hideToast()" class="toast-ok">OK, Got it</button>
+    </div>
+</div>
+
+<div class="auth-wrapper">
+
+    <div class="brand-panel">
+        <div class="brand-top">
+            <div class="brand-logo"><i class="fa-solid fa-layer-group"></i></div>
+            <div class="brand-name">DeDuplication ML</div>
+            <div class="brand-tag">AI Detection Engine</div>
+            <p class="brand-desc">
+                Intelligent duplicate detection powered by MinHash LSH, OpenCV, and Librosa — 
+                handling text, images, audio, and documents with pinpoint accuracy.
+            </p>
+        </div>
+
+        <div class="features-glass">
+            <div class="brand-feat">
+                <div class="feat-icon fi-blue"><i class="fa-solid fa-shapes"></i></div> 
+                Multi-format deduplication
+            </div>
+            <div class="brand-feat">
+                <div class="feat-icon fi-violet"><i class="fa-solid fa-bolt"></i></div> 
+                O(1) LSH lookup speed
+            </div>
+            <div class="brand-feat">
+                <div class="feat-icon fi-teal"><i class="fa-solid fa-shield-halved"></i></div> 
+                95%+ detection accuracy
+            </div>
+        </div>
+
+        <div class="brand-bottom">
+            <div class="brand-version">v2.0 · Enterprise Build</div>
+        </div>
+    </div>
+
+    <div class="form-panel">
+
+        <div id="form-header">
+            <div id="eyebrow"  class="form-eyebrow">Welcome Back</div>
+            <h1  id="title"    class="form-title">Sign in to your account</h1>
+            <p   id="subtitle" class="form-subtitle">Enter your credentials or continue with GitHub</p>
+        </div>
+
+        <div class="tab-row">
+            <button id="tab-signin" class="tab-btn active" onclick="switchTab('signin')">Sign In</button>
+            <button id="tab-signup" class="tab-btn"        onclick="switchTab('signup')">Sign Up</button>
+        </div>
+
+        <div id="form-signin">
+            <div class="form-group">
+                <label class="field-label">Email Address</label>
+                <div class="input-wrap">
+                    <i class="fa-regular fa-envelope input-icon"></i>
+                    <input type="email" id="si-email" class="field-input" placeholder="name@example.com" autocomplete="email">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="field-label">Password</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-lock input-icon"></i>
+                    <input type="password" id="si-password" class="field-input" placeholder="••••••••" autocomplete="current-password">
+                </div>
+            </div>
+            <button class="submit-btn" id="signin-btn" onclick="handleSignIn()">
+                Sign In <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+
+        <div id="form-signup" class="hidden">
+            <div class="form-group">
+                <label class="field-label">Full Name</label>
+                <div class="input-wrap">
+                    <i class="fa-regular fa-user input-icon"></i>
+                    <input type="text" id="su-name" class="field-input" placeholder="Jane Smith" autocomplete="name">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="field-label">Email Address</label>
+                <div class="input-wrap">
+                    <i class="fa-regular fa-envelope input-icon"></i>
+                    <input type="email" id="su-email" class="field-input" placeholder="jane@example.com" autocomplete="email">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="field-label">Password</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-lock input-icon"></i>
+                    <input type="password" id="su-password" class="field-input" placeholder="••••••••" autocomplete="new-password">
+                </div>
+            </div>
+            <button class="submit-btn" id="signup-btn" onclick="handleSignUp()">
+                Create Account <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+
+        <div class="or-divider"><span class="or-text">or continue with</span></div>
+
+        <a href="{{ url_for('login_github') }}" class="github-btn">
+            <i class="fa-brands fa-github"></i>
+            Continue with GitHub
+        </a>
+
+    </div></div><script>
+    /* ── Tab switching ──────────────────────────────────── */
+    function switchTab(mode) {
+        const isSignIn = mode === 'signin';
+
+        document.getElementById('tab-signin').className = 'tab-btn' + (isSignIn ? ' active' : '');
+        document.getElementById('tab-signup').className = 'tab-btn' + (!isSignIn ? ' active' : '');
+        document.getElementById('form-signin').classList.toggle('hidden', !isSignIn);
+        document.getElementById('form-signup').classList.toggle('hidden',  isSignIn);
+
+        // Update header text
+        document.getElementById('eyebrow').textContent  = isSignIn ? 'Welcome Back'  : 'Get Started';
+        document.getElementById('title').textContent    = isSignIn ? 'Sign in to your account' : 'Create a new account';
+        document.getElementById('subtitle').textContent = isSignIn 
+            ? 'Enter your credentials or continue with GitHub' 
+            : 'Join DeDupe ML and start detecting duplicates';
+    }
+
+    /* ── Toast ──────────────────────────────────────────── */
+    function showToast(msg, type = 'error', title = null) {
+        const icon = document.getElementById('toast-icon');
+        if (type === 'success') {
+            icon.className = 'toast-icon ti-success';
+            icon.innerHTML = '<i class="fa-solid fa-check"></i>';
+            document.getElementById('toast-title').textContent = title || 'Success';
+        } else {
+            icon.className = 'toast-icon ti-error';
+            icon.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+            document.getElementById('toast-title').textContent = title || 'Something went wrong';
+        }
+        document.getElementById('toast-msg').textContent = msg;
+        document.getElementById('toast-overlay').classList.remove('hidden');
+    }
+    function hideToast() { document.getElementById('toast-overlay').classList.add('hidden'); }
+
+    /* ── Helpers ────────────────────────────────────────── */
+    function setLoading(btnId, loading, defaultHTML) {
+        const btn = document.getElementById(btnId);
+        btn.disabled = loading;
+        btn.innerHTML = loading 
+            ? '<i class="fa-solid fa-circle-notch fa-spin"></i> Please wait…' 
+            : defaultHTML;
+    }
+
+    /* ── Sign In ────────────────────────────────────────── */
+    async function handleSignIn() {
+        const email    = document.getElementById('si-email').value.trim();
+        const password = document.getElementById('si-password').value;
+        if (!email || !password) { showToast('Please fill in all fields.'); return; }
+
+        setLoading('signin-btn', true, 'Sign In <i class="fa-solid fa-arrow-right"></i>');
+        try {
+            const res  = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast('Redirecting to your dashboard…', 'success', 'Login Successful!');
+                setTimeout(() => window.location.href = '/dashboard', 1100);
+            } else {
+                showToast(data.message || 'Invalid email or password.');
+            }
+        } catch {
+            showToast('Connection error. Please try again.');
+        } finally {
+            setLoading('signin-btn', false, 'Sign In <i class="fa-solid fa-arrow-right"></i>');
+        }
+    }
+
+    /* ── Sign Up ────────────────────────────────────────── */
+    async function handleSignUp() {
+        const name     = document.getElementById('su-name').value.trim();
+        const email    = document.getElementById('su-email').value.trim();
+        const password = document.getElementById('su-password').value;
+        if (!name || !email || !password) { showToast('Please fill in all fields.'); return; }
+        if (password.length < 6)          { showToast('Password must be at least 6 characters.'); return; }
+
+        setLoading('signup-btn', true, 'Create Account <i class="fa-solid fa-arrow-right"></i>');
+        try {
+            const res  = await fetch('/api/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast('Account created! You can now sign in.', 'success', 'Account Created');
+                setTimeout(() => switchTab('signin'), 1400);
+            } else {
+                showToast(data.message || 'Signup failed. Please try again.');
+            }
+        } catch {
+            showToast('Connection error. Please try again.');
+        } finally {
+            setLoading('signup-btn', false, 'Create Account <i class="fa-solid fa-arrow-right"></i>');
+        }
+    }
+
+    /* ── Enter key ──────────────────────────────────────── */
+    document.addEventListener('keydown', e => {
+        if (e.key !== 'Enter') return;
+        const signinVisible = !document.getElementById('form-signin').classList.contains('hidden');
+        if (signinVisible) handleSignIn(); else handleSignUp();
+    });
+
+    /* ── Show GitHub OAuth error if redirected back ──────── */
+    (function checkOAuthError() {
+        const params = new URLSearchParams(window.location.search);
+        const err    = params.get('error');
+        if (!err) return;
+        const msgs = {
+            state_mismatch: 'Session expired or the request was invalid. Please try signing in again.',
+            no_token:       'GitHub did not return an access token. Please try again.',
+            oauth_failed:   'GitHub sign-in failed. Check that OAuth credentials are configured correctly in app.py.',
+        };
+        showToast(msgs[err] || 'GitHub sign-in encountered an error.', 'error', 'GitHub Sign-In Failed');
+        window.history.replaceState({}, document.title, window.location.pathname);
+    })();
+</script>
+</body>
+</html>

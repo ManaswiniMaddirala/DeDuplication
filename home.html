@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>De Dupulication — AI-Powered Duplicate Detection</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body { overflow-y: auto; }
+
+        /* ── Hero ───────────────────────────────────────────── */
+        .hero {
+            max-width: 1200px; margin: 0 auto;
+            padding: 96px 48px 80px;
+            text-align: center;
+            position: relative; z-index: 1;
+        }
+        .hero-eyebrow {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 5px 14px; border-radius: 99px;
+            background: var(--accent-lt); border: 1px solid var(--accent-md);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10.5px; font-weight: 600; color: var(--accent);
+            text-transform: uppercase; letter-spacing: 0.12em;
+            margin-bottom: 28px;
+        }
+        .hero-eyebrow-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--accent);
+            animation: dot-pulse 2s ease-in-out infinite;
+        }
+        .hero-h1 {
+            font-size: clamp(38px, 5vw, 64px);
+            font-weight: 800; letter-spacing: -0.04em; line-height: 1.08;
+            color: var(--text); margin-bottom: 24px;
+        }
+        .hero-h1 span {
+            background: linear-gradient(135deg, var(--accent), #8B5CF6);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero-sub {
+            font-size: 18px; color: var(--muted); line-height: 1.7;
+            max-width: 600px; margin: 0 auto 40px;
+        }
+        .hero-actions { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
+        .hero-btn-primary {
+            display: inline-flex; align-items: center; gap: 9px;
+            padding: 14px 30px; border-radius: var(--r-lg);
+            background: linear-gradient(135deg, var(--accent), var(--accent-dk));
+            color: #fff; font-size: 15px; font-weight: 700;
+            text-decoration: none; transition: all var(--ease);
+            box-shadow: 0 4px 20px rgba(37,99,235,0.35);
+        }
+        .hero-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(37,99,235,0.45); }
+        .hero-btn-ghost {
+            display: inline-flex; align-items: center; gap: 9px;
+            padding: 13px 26px; border-radius: var(--r-lg);
+            background: var(--surface); color: var(--text2);
+            font-size: 15px; font-weight: 600;
+            text-decoration: none; transition: all var(--ease);
+            border: 1.5px solid var(--border);
+            box-shadow: var(--shadow-sm);
+        }
+        .hero-btn-ghost:hover { border-color: var(--border2); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+        .hero-badges {
+            display: flex; align-items: center; justify-content: center;
+            gap: 24px; margin-top: 48px; flex-wrap: wrap;
+        }
+        .hero-badge { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text2); }
+        .hero-badge i { color: var(--accent); font-size: 14px; }
+        .hero-badge-sep { width: 1px; height: 18px; background: var(--border); }
+
+        /* ── Stats Strip — 3 cols perfectly centred ─────────── */
+        .stats-strip {
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+        .stats-strip-inner {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 44px 48px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0;
+            text-align: center;
+        }
+        .stats-strip-item + .stats-strip-item {
+            border-left: 1px solid var(--border);
+        }
+        .stats-strip-item { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 0 24px; }
+        .stats-strip-val { font-size: 36px; font-weight: 800; letter-spacing: -0.04em; color: var(--text); }
+        .stats-strip-val span { color: var(--accent); }
+        .stats-strip-label { font-size: 13px; color: var(--muted); font-weight: 500; }
+
+        /* ── Features ────────────────────────────────────────── */
+        .features-section { max-width: 1200px; margin: 0 auto; padding: 80px 48px; }
+        .section-label {
+            font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 600;
+            color: var(--accent); text-transform: uppercase; letter-spacing: 0.14em;
+            margin-bottom: 14px; display: block;
+        }
+        .section-title { font-size: 34px; font-weight: 800; letter-spacing: -0.03em; color: var(--text); margin-bottom: 12px; }
+        .section-sub { font-size: 15px; color: var(--muted); max-width: 500px; line-height: 1.7; margin-bottom: 48px; }
+        .features-big-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .feat-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 20px; padding: 32px;
+            transition: all var(--ease-spring); position: relative; overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+        .feat-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: var(--gradient, linear-gradient(90deg, var(--accent), #6366F1));
+            transform: scaleX(0); transform-origin: left; transition: transform .35s ease;
+        }
+        .feat-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); border-color: var(--border2); }
+        .feat-card:hover::before { transform: scaleX(1); }
+        .feat-card-icon {
+            width: 52px; height: 52px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; margin-bottom: 20px; transition: transform var(--ease-spring);
+        }
+        .feat-card:hover .feat-card-icon { transform: scale(1.1) rotate(-8deg); }
+        .feat-card-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 10px; letter-spacing: -0.01em; }
+        .feat-card-desc { font-size: 13.5px; color: var(--muted); line-height: 1.7; }
+
+        /* ── How It Works ────────────────────────────────────── */
+        .how-section {
+            background: linear-gradient(135deg, #EFF6FF 0%, #F5F3FF 100%);
+            border-top: 1px solid var(--accent-md); border-bottom: 1px solid var(--accent-md);
+        }
+        .how-inner { max-width: 1200px; margin: 0 auto; padding: 80px 48px; }
+        .how-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; margin-top: 48px; }
+        .how-step { text-align: center; }
+        .how-step-num {
+            width: 52px; height: 52px; border-radius: 14px;
+            background: var(--surface); border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 18px; color: var(--accent);
+            margin: 0 auto 18px; box-shadow: 0 4px 16px rgba(37,99,235,0.1);
+            transition: all var(--ease-spring);
+        }
+        .how-step:hover .how-step-num { transform: scale(1.1); box-shadow: 0 8px 24px rgba(37,99,235,0.2); }
+        .how-step-title { font-size: 14.5px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+        .how-step-desc { font-size: 13px; color: var(--muted); line-height: 1.65; }
+
+        /* ── Formats — grouped & breathable ─────────────────── */
+        .formats-section { max-width: 1200px; margin: 0 auto; padding: 80px 48px; }
+        .formats-categories { display: flex; flex-direction: column; gap: 28px; }
+        .format-group { display: flex; align-items: flex-start; gap: 24px; }
+        .format-group-label {
+            min-width: 96px; flex-shrink: 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9.5px; font-weight: 600;
+            color: var(--muted); text-transform: uppercase;
+            letter-spacing: 0.1em; padding-top: 13px;
+        }
+        .format-pills-row { display: flex; flex-wrap: wrap; gap: 10px; }
+        .format-pill {
+            display: inline-flex; align-items: center; gap: 9px;
+            padding: 9px 18px; border-radius: 12px;
+            background: var(--surface); border: 1.5px solid var(--border);
+            font-size: 13.5px; font-weight: 600; color: var(--text2);
+            box-shadow: var(--shadow-sm); transition: all var(--ease); cursor: default;
+        }
+        .format-pill:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--border2); }
+        .pill-icon {
+            width: 26px; height: 26px; border-radius: 7px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; flex-shrink: 0;
+        }
+        .pi-blue   { background: var(--accent-lt);  color: var(--accent); }
+        .pi-red    { background: var(--red-lt);     color: var(--red); }
+        .pi-violet { background: var(--violet-lt);  color: var(--violet); }
+        .pi-green  { background: var(--green-lt);   color: var(--green); }
+        .pi-yellow { background: var(--yellow-lt);  color: var(--yellow); }
+
+        /* ── CTA ─────────────────────────────────────────────── */
+        .cta-section { max-width: 1200px; margin: 0 auto; padding: 0 48px 100px; }
+        .cta-card {
+            background: linear-gradient(135deg, #1E2B45 0%, #0F172A 100%);
+            border-radius: 28px; padding: 72px; text-align: center;
+            position: relative; overflow: hidden;
+        }
+        .cta-card::before {
+            content: ''; position: absolute; top: -100px; left: -80px;
+            width: 360px; height: 360px;
+            background: radial-gradient(circle, rgba(37,99,235,0.25) 0%, transparent 65%);
+            pointer-events: none;
+        }
+        .cta-card::after {
+            content: ''; position: absolute; bottom: -80px; right: -80px;
+            width: 280px; height: 280px;
+            background: radial-gradient(circle, rgba(124,58,237,0.18) 0%, transparent 65%);
+            pointer-events: none;
+        }
+        .cta-title { font-size: 36px; font-weight: 800; letter-spacing: -0.03em; color: #F1F5F9; margin-bottom: 16px; position: relative; z-index: 1; }
+        .cta-desc  { font-size: 16px; color: #94A3B8; margin-bottom: 36px; line-height: 1.7; position: relative; z-index: 1; }
+        .cta-btns  { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; position: relative; z-index: 1; }
+        .cta-btn-primary {
+            display: inline-flex; align-items: center; gap: 9px;
+            padding: 14px 32px; border-radius: var(--r-lg);
+            background: linear-gradient(135deg, var(--accent), var(--accent-dk));
+            color: #fff; font-size: 15px; font-weight: 700;
+            text-decoration: none; transition: all var(--ease);
+            box-shadow: 0 4px 20px rgba(37,99,235,0.5);
+        }
+        .cta-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(37,99,235,0.6); }
+
+        /* ── Responsive ──────────────────────────────────────── */
+        @media(max-width: 900px) {
+            .how-steps { grid-template-columns: repeat(2, 1fr); }
+            .features-big-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media(max-width: 768px) {
+            .hero { padding: 64px 24px 56px; }
+            .features-section, .how-inner, .formats-section, .cta-section { padding-left: 24px; padding-right: 24px; }
+            .features-big-grid { grid-template-columns: 1fr; }
+            .how-steps { grid-template-columns: 1fr; }
+            .stats-strip-inner { padding: 32px 24px; }
+            .cta-card { padding: 40px 28px; }
+            .format-group { flex-direction: column; gap: 10px; }
+            .format-group-label { padding-top: 0; }
+        }
+        @media(max-width: 500px) {
+            .stats-strip-inner {
+                grid-template-columns: 1fr;
+                max-width: 300px;
+                gap: 24px;
+            }
+            .stats-strip-item + .stats-strip-item {
+                border-left: none;
+                border-top: 1px solid var(--border);
+                padding-top: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══ NAVBAR ══════════════════════════════════════════════════ -->
+<nav class="topbar" style="position: sticky; top: 0; z-index: 100;">
+    <div class="topbar-inner" style="max-width: 1200px; margin: 0 auto; padding: 0 48px;">
+        <a href="{{ url_for('dashboard') }}" class="topbar-brand">
+            <div class="topbar-logo-mark"><i class="fa-solid fa-layer-group"></i></div>
+            <div class="topbar-brand-text">
+                <div class="logo-name">De Duplication ML</div>
+                <div class="logo-sub">AI Detection</div>
+            </div>
+        </a>
+        <div class="topbar-nav">
+            <a href="{{ url_for('home') }}"       class="nav-link active"><i class="fa-solid fa-house"></i> Home</a>
+            <a href="{{ url_for('dashboard') }}"  class="nav-link"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+            <a href="{{ url_for('upload') }}"     class="nav-link"><i class="fa-solid fa-upload"></i> Upload</a>
+            <a href="{{ url_for('duplicates') }}" class="nav-link"><i class="fa-solid fa-copy"></i> Duplicates</a>
+            <div class="nav-divider"></div>
+            <a href="{{ url_for('about') }}"      class="nav-link"><i class="fa-solid fa-circle-info"></i> About</a>
+            <a href="{{ url_for('contact') }}"    class="nav-link"><i class="fa-solid fa-headset"></i> Support</a>
+        </div>
+        <div class="topbar-right">
+            {% if user_email %}
+            <div class="topbar-user">
+                <div class="avatar">{{ user_name[0]|upper if user_name else 'U' }}</div>
+                <div class="topbar-user-info">
+                    <div class="user-name">{{ user_name or 'User' }}</div>
+                    <div class="user-email">{{ user_email }}</div>
+                </div>
+            </div>
+            <a href="{{ url_for('logout') }}" class="logout-btn">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Logout</span>
+            </a>
+            {% else %}
+            <a href="{{ url_for('signin') }}" class="nav-link" style="font-weight:600;">Sign In</a>
+            <a href="{{ url_for('signin') }}" class="btn btn-primary" style="padding: 8px 16px; font-size: 13.5px;">Get Started <i class="fa-solid fa-arrow-right"></i></a>
+            {% endif %}
+            <button class="topbar-hamburger" onclick="toggleMobileNav()" aria-label="Menu">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<div class="mobile-nav-drawer" id="mobile-nav">
+    <a href="{{ url_for('home') }}"       class="nav-link active"><i class="fa-solid fa-house"></i> Home</a>
+    <a href="{{ url_for('dashboard') }}"  class="nav-link"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+    <a href="{{ url_for('upload') }}"     class="nav-link"><i class="fa-solid fa-upload"></i> Upload</a>
+    <a href="{{ url_for('duplicates') }}" class="nav-link"><i class="fa-solid fa-copy"></i> Duplicates</a>
+    <div class="mobile-divider"></div>
+    <a href="{{ url_for('about') }}"      class="nav-link"><i class="fa-solid fa-circle-info"></i> About</a>
+    <a href="{{ url_for('contact') }}"    class="nav-link"><i class="fa-solid fa-headset"></i> Support</a>
+    <div class="mobile-divider"></div>
+    {% if user_email %}
+    <a href="{{ url_for('logout') }}" class="nav-link" style="color:var(--red)"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+    {% else %}
+    <a href="{{ url_for('signin') }}" class="nav-link"><i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In</a>
+    {% endif %}
+</div>
+
+<!-- ═══ HERO ═════════════════════════════════════════════════════ -->
+<section class="hero animate-in">
+    <div class="hero-eyebrow">
+        <span class="hero-eyebrow-dot"></span>
+        v2.0 · Production Ready · 95%+ Accuracy
+    </div>
+    <h1 class="hero-h1">
+        Detect Duplicate Files<br>
+        <span>Instantly with AI</span>
+    </h1>
+    <p class="hero-sub">
+        DeDuplication ML uses MinHash LSH and deep ML pipelines to find exact and near-duplicate files across text, images, audio, and documents — at O(1) speed.
+    </p>
+    <div class="hero-actions">
+        <a href="{{ url_for('dashboard') }}" class="hero-btn-primary">
+            <i class="fa-solid fa-bolt"></i> Try Now
+        </a>
+        <a href="{{ url_for('about') }}" class="hero-btn-ghost">
+            <i class="fa-solid fa-circle-info"></i> Learn How It Works
+        </a>
+    </div>
+    <div class="hero-badges">
+        <div class="hero-badge"><i class="fa-solid fa-shield-halved"></i> No File Size Limit</div>
+        <div class="hero-badge-sep"></div>
+        <div class="hero-badge"><i class="fa-solid fa-bolt"></i> Real-Time Results</div>
+        <div class="hero-badge-sep"></div>
+        <div class="hero-badge"><i class="fa-solid fa-shapes"></i> 10+ File Formats</div>
+        <div class="hero-badge-sep"></div>
+        <div class="hero-badge"><i class="fa-solid fa-lock"></i> Private &amp; Secure</div>
+    </div>
+</section>
+
+<!-- ═══ STATS STRIP — 3 items, perfectly centred ════════════════ -->
+<div class="stats-strip">
+    <div class="stats-strip-inner">
+        <div class="stats-strip-item animate-in delay-1">
+            <div class="stats-strip-val"><span>95</span>%+</div>
+            <div class="stats-strip-label">Detection Accuracy</div>
+        </div>
+        <div class="stats-strip-item animate-in delay-2">
+            <div class="stats-strip-val">O(<span>1</span>)</div>
+            <div class="stats-strip-label">Lookup Complexity</div>
+        </div>
+        <div class="stats-strip-item animate-in delay-3">
+            <div class="stats-strip-val"><span>10</span>+</div>
+            <div class="stats-strip-label">Supported Formats</div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ FEATURES ══════════════════════════════════════════════════ -->
+<section class="features-section">
+    <span class="section-label">Core Capabilities</span>
+    <h2 class="section-title">Everything you need for<br>smart deduplication</h2>
+    <p class="section-sub">From first upload to instant duplicate detection — DeDupe ML handles the heavy lifting so you don't have to.</p>
+    <div class="features-big-grid">
+        <div class="feat-card animate-in delay-1" style="--gradient: linear-gradient(90deg, #2563EB, #6366F1)">
+            <div class="feat-card-icon fi-blue"><i class="fa-solid fa-brain"></i></div>
+            <div class="feat-card-title">ML-Powered Detection</div>
+            <div class="feat-card-desc">MinHash LSH combined with format-specific extractors identifies duplicates and near-duplicates with precision beyond simple hash matching.</div>
+        </div>
+        <div class="feat-card animate-in delay-2" style="--gradient: linear-gradient(90deg, #7C3AED, #A855F7)">
+            <div class="feat-card-icon fi-violet"><i class="fa-solid fa-bolt"></i></div>
+            <div class="feat-card-title">Lightning Fast Lookup</div>
+            <div class="feat-card-desc">O(1) constant-time search via LSH buckets. No exhaustive comparison — the system scales to millions of files without slowdown.</div>
+        </div>
+        <div class="feat-card animate-in delay-3" style="--gradient: linear-gradient(90deg, #10B981, #059669)">
+            <div class="feat-card-icon fi-green"><i class="fa-solid fa-shapes"></i></div>
+            <div class="feat-card-title">Multi-Format Support</div>
+            <div class="feat-card-desc">Text, PDFs, images, audio, CSV, JSON, XML — each format uses a specialized pipeline. Even cross-format matches are detected.</div>
+        </div>
+        <div class="feat-card animate-in delay-1" style="--gradient: linear-gradient(90deg, #F59E0B, #D97706)">
+            <div class="feat-card-icon" style="background:var(--yellow-lt);color:var(--yellow);"><i class="fa-solid fa-diagram-project"></i></div>
+            <div class="feat-card-title">Cross-Format Detection</div>
+            <div class="feat-card-desc">A DOCX and a PDF with the same content? Detected. Our cross-format pipeline compares text tokens regardless of the container format.</div>
+        </div>
+        <div class="feat-card animate-in delay-2" style="--gradient: linear-gradient(90deg, #EF4444, #DC2626)">
+            <div class="feat-card-icon" style="background:var(--red-lt);color:var(--red);"><i class="fa-solid fa-database"></i></div>
+            <div class="feat-card-title">Smart Storage</div>
+            <div class="feat-card-desc">Exact duplicates are automatically deleted from disk. Near-duplicates are flagged and kept — saving space without losing data.</div>
+        </div>
+        <div class="feat-card animate-in delay-3" style="--gradient: linear-gradient(90deg, #06B6D4, #0891B2)">
+            <div class="feat-card-icon" style="background:#ECFEFF;color:#06B6D4;"><i class="fa-solid fa-chart-pie"></i></div>
+            <div class="feat-card-title">Real-Time Dashboard</div>
+            <div class="feat-card-desc">Live stats, activity feed, and status reports. Every scan result is logged with similarity score, match status, and timestamp.</div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══ HOW IT WORKS ══════════════════════════════════════════════ -->
+<section class="how-section">
+    <div class="how-inner">
+        <span class="section-label">The Process</span>
+        <h2 class="section-title">Four steps from upload to result</h2>
+        <div class="how-steps">
+            <div class="how-step animate-in delay-1">
+                <div class="how-step-num">1</div>
+                <div class="how-step-title">Upload &amp; Parse</div>
+                <div class="how-step-desc">Files are received and parsed by type using Textract, PyMuPDF, OpenCV, or Librosa.</div>
+            </div>
+            <div class="how-step animate-in delay-2">
+                <div class="how-step-num">2</div>
+                <div class="how-step-title">Feature Extraction</div>
+                <div class="how-step-desc">ML models extract tokens, color histograms, or MFCC spectral fingerprints depending on format.</div>
+            </div>
+            <div class="how-step animate-in delay-3">
+                <div class="how-step-num">3</div>
+                <div class="how-step-title">MinHash + LSH</div>
+                <div class="how-step-desc">DataSketch MinHash signatures are queried via LSH buckets for O(1) approximate nearest-neighbour search.</div>
+            </div>
+            <div class="how-step animate-in delay-4">
+                <div class="how-step-num">4</div>
+                <div class="how-step-title">Classify &amp; Report</div>
+                <div class="how-step-desc">Results are classified as Duplicate, Near Duplicate, or Unique — and stored with full similarity scores.</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══ SUPPORTED FORMATS — grouped & breathable ═════════════════ -->
+<section class="formats-section animate-in">
+    <span class="section-label">Supported Formats</span>
+    <h2 class="section-title">Works with every file type you use</h2>
+    <p class="section-sub">Each format runs through a dedicated ML extraction pipeline — from raw text to audio spectrograms.</p>
+
+    <div class="formats-categories">
+
+        <div class="format-group">
+            <div class="format-group-label">Documents</div>
+            <div class="format-pills-row">
+                <div class="format-pill"><span class="pill-icon pi-blue"><i class="fa-solid fa-file-lines"></i></span> TXT</div>
+                <div class="format-pill"><span class="pill-icon pi-blue"><i class="fa-solid fa-file-word"></i></span> DOCX</div>
+                <div class="format-pill"><span class="pill-icon pi-blue"><i class="fa-solid fa-file-code"></i></span> MD</div>
+                <div class="format-pill"><span class="pill-icon pi-red"><i class="fa-solid fa-file-pdf"></i></span> PDF</div>
+            </div>
+        </div>
+
+        <div class="format-group">
+            <div class="format-group-label">Images</div>
+            <div class="format-pills-row">
+                <div class="format-pill"><span class="pill-icon pi-violet"><i class="fa-solid fa-image"></i></span> JPG / PNG</div>
+                <div class="format-pill"><span class="pill-icon pi-violet"><i class="fa-solid fa-image"></i></span> WEBP</div>
+            </div>
+        </div>
+
+        <div class="format-group">
+            <div class="format-group-label">Audio</div>
+            <div class="format-pills-row">
+                <div class="format-pill"><span class="pill-icon pi-green"><i class="fa-solid fa-music"></i></span> MP3</div>
+                <div class="format-pill"><span class="pill-icon pi-green"><i class="fa-solid fa-music"></i></span> WAV / FLAC</div>
+            </div>
+        </div>
+
+        <div class="format-group">
+            <div class="format-group-label">Data</div>
+            <div class="format-pills-row">
+                <div class="format-pill"><span class="pill-icon pi-yellow"><i class="fa-solid fa-table"></i></span> CSV</div>
+                <div class="format-pill"><span class="pill-icon pi-yellow"><i class="fa-solid fa-code"></i></span> JSON</div>
+                <div class="format-pill"><span class="pill-icon pi-yellow"><i class="fa-solid fa-code"></i></span> XML</div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<!-- ═══ CTA ════════════════════════════════════════════════════════ -->
+<section class="cta-section animate-in">
+    <div class="cta-card">
+        <div class="cta-title">Ready to eliminate duplicates?</div>
+        {% if user_email %}
+        <div class="cta-desc">Welcome back, {{ user_name }}! Jump straight into your dashboard<br>and start scanning files.</div>
+        <div class="cta-btns">
+            <a href="{{ url_for('dashboard') }}" class="cta-btn-primary">
+                <i class="fa-solid fa-chart-pie"></i> Go to Dashboard
+            </a>
+            <a href="{{ url_for('upload') }}" class="cta-btn-primary" style="background:linear-gradient(135deg,#7C3AED,#6D28D9); box-shadow:0 4px 20px rgba(124,58,237,0.5);">
+                <i class="fa-solid fa-upload"></i> Upload Files
+            </a>
+        </div>
+        {% else %}
+        <div class="cta-desc">Sign up in seconds and start scanning files immediately.<br>No credit card. No setup. Just results.</div>
+        <div class="cta-btns">
+            <a href="{{ url_for('signin') }}" class="cta-btn-primary">
+                <i class="fa-solid fa-bolt"></i> Try it Now!!
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- ═══ GLOBAL FOOTER ═════════════════════════════════════════════ -->
+<footer class="app-footer">
+    <div class="app-footer-inner">
+        <a href="{{ url_for('home') }}" class="footer-brand">
+            <div class="footer-brand-mark">
+                <i class="fa-solid fa-layer-group"></i>
+            </div>
+            <div>
+                <div class="footer-brand-name">DeDuplication ML</div>
+                <div class="footer-brand-sub">AI Detection Engine</div>
+            </div>
+        </a>
+        <nav class="footer-links">
+            <a href="{{ url_for('about') }}"   class="footer-link"><i class="fa-solid fa-circle-info" style="font-size:10px;"></i> About</a>
+            <div class="footer-link-divider"></div>
+            <a href="{{ url_for('contact') }}" class="footer-link"><i class="fa-solid fa-headset" style="font-size:10px;"></i> Support</a>
+        </nav>
+        <div class="footer-copy">© 2025 <span>DeDuplication ML</span> · All rights reserved</div>
+    </div>
+</footer>
+
+<script>
+    function toggleMobileNav() {
+        const nav = document.getElementById('mobile-nav');
+        if (nav) nav.classList.toggle('active');
+    }
+</script>
+<script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+</body>
+</html>

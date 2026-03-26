@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duplicates — DeDuplication ML</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* ── Premium animated status badges ─────────── */
+        .chip-dup {
+            animation: dup-badge-glow 2.4s ease-in-out infinite !important;
+            font-weight: 700 !important;
+        }
+        @keyframes dup-badge-glow {
+            0%,100% { box-shadow: 0 0 0 0   rgba(255,75,112,0);    background: var(--red-lt); }
+            50%     { box-shadow: 0 0 0 5px rgba(255,75,112,0.20); background: #ffe0e7; }
+        }
+        .chip-near {
+            animation: near-badge-glow 3.0s ease-in-out infinite !important;
+        }
+        @keyframes near-badge-glow {
+            0%,100% { box-shadow: 0 0 0 0   rgba(245,159,0,0); }
+            50%     { box-shadow: 0 0 0 5px rgba(245,159,0,0.20); }
+        }
+
+        /* ── Empty state animation ─────────────────── */
+        .empty-state { animation: fadeUp 0.55s cubic-bezier(0.16,1,0.3,1) both; }
+
+        /* ── Score counter typography ──────────────── */
+        .match-score {
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.04em;
+        }
+
+        /* ── Card inner glow stripe on hover ─────── */
+        .dup-card::after {
+            content:''; position:absolute; top:0; left:-130%; width:65%; height:100%;
+            background:linear-gradient(90deg, transparent, rgba(255,255,255,0.46), transparent);
+            transform:skewX(-18deg); transition:left 0.60s ease; pointer-events:none;
+        }
+        .dup-card:hover::after { left:170%; }
+
+        /* ── Similarity bar fill inside match-box ─── */
+        .sim-bar-wrap { margin-top: 10px; }
+        .sim-bar-track { height: 4px; background: var(--surface3); border-radius: 4px; overflow: hidden; }
+        .sim-bar-fill {
+            height: 100%; border-radius: 4px;
+            transition: width 1.1s cubic-bezier(0.16,1,0.3,1);
+            width: 0%;
+        }
+        .sim-bar-dup    { background: linear-gradient(to right, var(--red),   #D0143A); }
+        .sim-bar-near   { background: linear-gradient(to right, var(--yellow), #D97706); }
+        .sim-bar-unique { background: linear-gradient(to right, var(--green),  #059669); }
+
+        /* ── Filter btn active glow ────────────────── */
+        .filter-btn { transition: all 0.26s cubic-bezier(0.34,1.3,0.64,1) !important; }
+        .filter-btn.active-all    { box-shadow: 0 6px 18px rgba(79,107,255,0.28) !important; }
+        .filter-btn.active-dup    { box-shadow: 0 6px 18px rgba(255,75,112,0.28) !important; }
+        .filter-btn.active-near   { box-shadow: 0 6px 18px rgba(245,159,0,0.28)  !important; }
+        .filter-btn.active-unique { box-shadow: 0 6px 18px rgba(0,194,120,0.28)  !important; }
+
+        /* ── Stagger card entrances ──────────────── */
+        .dup-grid > .dup-card {
+            animation: stagger-up 0.55s cubic-bezier(0.16,1,0.3,1) both !important;
+        }
+        @keyframes stagger-up {
+            from { opacity:0; transform:translateY(32px) scale(0.96); }
+            to   { opacity:1; transform:translateY(0)    scale(1); }
+        }
+
+        .dup-grid-empty { display:flex; justify-content:center; }
+    </style>
+</head>
+<body>
+<div class="app-shell">
+
+    <nav class="topbar">
+        <div class="topbar-inner">
+            <a href="{{ url_for('dashboard') }}" class="topbar-brand">
+                <div class="topbar-logo-mark"><i class="fa-solid fa-layer-group"></i></div>
+                <div class="topbar-brand-text">
+                    <div class="logo-name">DeDuplication ML</div>
+                    <div class="logo-sub">AI Detection</div>
+                </div>
+            </a>
+            <div class="topbar-nav">
+                <a href="{{ url_for('home') }}"       class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="{{ url_for('dashboard') }}"  class="nav-link"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+                <a href="{{ url_for('upload') }}"     class="nav-link"><i class="fa-solid fa-upload"></i> Upload</a>
+                <a href="{{ url_for('duplicates') }}" class="nav-link active"><i class="fa-solid fa-copy"></i> Duplicates</a>
+                <div class="nav-divider"></div>
+                <a href="{{ url_for('about') }}"   class="nav-link"><i class="fa-solid fa-circle-info"></i> About</a>
+                <a href="{{ url_for('contact') }}" class="nav-link"><i class="fa-solid fa-headset"></i> Support</a>
+            </div>
+            <div class="topbar-right">
+                <div class="topbar-user">
+                    <div class="avatar">{{ user_name[0]|upper if user_name else 'U' }}</div>
+                    <div class="topbar-user-info">
+                        <div class="user-name">{{ user_name or 'User' }}</div>
+                        <div class="user-email">{{ user_email or 'user@example.com' }}</div>
+                    </div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="logout-btn">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Logout</span>
+                </a>
+                <button class="topbar-hamburger" onclick="toggleMobileNav()" aria-label="Menu">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+    <div class="mobile-nav-drawer" id="mobile-nav">
+        <a href="{{ url_for('dashboard') }}"  class="nav-link"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+        <a href="{{ url_for('upload') }}"     class="nav-link"><i class="fa-solid fa-upload"></i> Upload</a>
+        <a href="{{ url_for('duplicates') }}" class="nav-link active"><i class="fa-solid fa-copy"></i> Duplicates</a>
+        <div class="mobile-divider"></div>
+        <a href="{{ url_for('about') }}"   class="nav-link"><i class="fa-solid fa-circle-info"></i> About</a>
+        <a href="{{ url_for('contact') }}" class="nav-link"><i class="fa-solid fa-headset"></i> Support</a>
+        <div class="mobile-divider"></div>
+        <a href="{{ url_for('logout') }}" class="nav-link" style="color:var(--red)"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+    </div>
+
+    <main>
+        <div class="page-header-row animate-in">
+            <div>
+                <div class="page-eyebrow">
+                    <span class="eyebrow-dot eyebrow-dot--red"></span>
+                    <span class="eyebrow-label">Detection Results</span>
+                </div>
+                <h1 class="page-title">Duplicates</h1>
+                <p class="page-subtitle">Review and manage all identified duplicate files</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap;">
+                <div class="filter-bar">
+                    <button class="filter-btn active-all" onclick="filterCards('all',this)">All</button>
+                    <button class="filter-btn" onclick="filterCards('dup',this)">Duplicates</button>
+                    <button class="filter-btn" onclick="filterCards('near',this)">Near Dups</button>
+                    <button class="filter-btn" onclick="filterCards('unique',this)">Unique</button>
+                </div>
+                {% if user_email == 'manumaddirala@gmail.com' %}
+                <button onclick="confirmHardReset()" class="btn btn-admin-wipe">
+                    <i class="fa-solid fa-skull-crossbones"></i> Delete All
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="dup-grid animate-in delay-1">
+            {% if duplicates %}
+                {% for item in duplicates %}
+                <div id="record-{{ item.id }}"
+                     class="dup-card status-{% if item.status == 'Duplicate' %}dup{% elif item.status == 'Near Duplicate' %}near{% else %}unique{% endif %}"
+                     data-status="{% if item.status == 'Duplicate' %}dup{% elif item.status == 'Near Duplicate' %}near{% else %}unique{% endif %}"
+                     data-sim="{{ item.similarity }}">
+
+                    <div class="dup-card-header">
+                        <div class="dup-card-meta">
+                            <div class="card-file-icon">
+                                {% if item.file_type == 'pdf' %}<i class="fa-solid fa-file-pdf" style="color:#ef4444;"></i>
+                                {% elif item.file_type in ['image','image_mark_list','image_fee_receipt','image_general'] %}<i class="fa-regular fa-image"></i>
+                                {% elif item.file_type == 'audio' %}<i class="fa-solid fa-music"></i>
+                                {% else %}<i class="fa-regular fa-file-lines"></i>{% endif %}
+                            </div>
+                            <div class="dup-card-info">
+                                <div class="dup-card-name" title="{{ item.uploaded_file | clean_filename }}">{{ item.uploaded_file | clean_filename }}</div>
+                                <div class="dup-card-date">{{ item.timestamp.strftime('%b %d, %Y') }}</div>
+                            </div>
+                        </div>
+                        <span class="chip {% if item.status == 'Duplicate' %}chip-dup{% elif item.status == 'Near Duplicate' %}chip-near{% else %}chip-unique{% endif %}">
+                            {% if item.status == 'Duplicate' %}<i class="fa-solid fa-circle-xmark" style="font-size:8px;"></i>
+                            {% elif item.status == 'Near Duplicate' %}<i class="fa-solid fa-clone" style="font-size:8px;"></i>
+                            {% else %}<i class="fa-solid fa-check" style="font-size:8px;"></i>{% endif %}
+                            {{ item.status }}
+                        </span>
+                    </div>
+
+                    <div class="match-box">
+                        <div class="match-box-row">
+                            <span class="match-label">Similarity</span>
+                            <span class="match-score {% if item.status == 'Duplicate' %}text-dup{% elif item.status == 'Near Duplicate' %}text-near{% else %}text-unique{% endif %}">
+                                {{ item.similarity }}%
+                            </span>
+                        </div>
+                        <!-- Animated similarity bar -->
+                        <div class="sim-bar-wrap">
+                            <div class="sim-bar-track">
+                                <div class="sim-bar-fill {% if item.status == 'Duplicate' %}sim-bar-dup{% elif item.status == 'Near Duplicate' %}sim-bar-near{% else %}sim-bar-unique{% endif %}"
+                                     data-width="{{ item.similarity }}"></div>
+                            </div>
+                        </div>
+                        <div class="match-file truncate" title="{{ item.matched_file }}" style="margin-top:8px;">
+                            {% if item.matched_file and item.matched_file != 'None' %}
+                                <i class="fa-solid fa-link" style="font-size:9px;margin-right:5px;color:var(--subtle);"></i>{{ item.matched_file | clean_filename }}
+                            {% else %}
+                                <span class="match-none">No match found</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="dup-card-actions">
+                        {% if item.status != 'Duplicate' %}
+                            <button class="card-btn card-btn-preview"
+                                data-url="{{ url_for('serve_file', file_type=item.file_type, filename=item.uploaded_file) }}"
+                                data-filetype="{{ item.file_type }}"
+                                data-filename="{{ item.uploaded_file | clean_filename }}"
+                                onclick="openPreview(this.dataset.url, this.dataset.filetype, this.dataset.filename)">
+                                <i class="fa-solid fa-eye"></i> Preview
+                            </button>
+                            <a href="{{ url_for('serve_file', file_type=item.file_type, filename=item.uploaded_file) }}" download class="card-btn card-btn-download">
+                                <i class="fa-solid fa-download"></i> Save
+                            </a>
+                        {% else %}
+                            <div class="dup-placeholder">Marked as duplicate</div>
+                        {% endif %}
+                        <button onclick="confirmDelete('{{ item.id }}')" class="card-btn-delete">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-span-3">
+                    <div class="panel">
+                        <div class="empty-state">
+                            <div class="empty-icon"><i class="fa-regular fa-folder-open"></i></div>
+                            <div class="empty-title">No records found</div>
+                            <div class="empty-desc">Upload files to start detecting duplicates</div>
+                            <a href="{{ url_for('upload') }}" class="btn btn-primary mt-16">Upload Now <i class="fa-solid fa-arrow-right"></i></a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </main>
+</div>
+
+<!-- Delete Modal -->
+<div id="delete-modal" class="hidden modal-overlay">
+    <div class="modal-box">
+        <div class="modal-icon mi-red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div class="modal-title">Delete File?</div>
+        <div class="modal-desc">This action is permanent. The file and its record will be removed from the database.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <button onclick="closeDeleteModal()" class="modal-btn modal-btn-ghost">Cancel</button>
+            <button id="confirm-delete-btn" class="modal-btn modal-btn-red">Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div id="preview-modal" class="hidden modal-overlay" onclick="if(event.target===this)closePreview()">
+    <div class="modal-box" style="max-width:720px;width:95%;padding:0;overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <i class="fa-solid fa-eye" style="color:var(--accent);font-size:14px;"></i>
+                <span id="preview-title" style="font-weight:700;font-size:14px;color:var(--text);font-family:'JetBrains Mono',monospace;max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+            </div>
+            <div style="display:flex;gap:8px;">
+                <a id="preview-dl-btn" href="#" class="card-btn card-btn-download" style="text-decoration:none;"><i class="fa-solid fa-download"></i> Download</a>
+                <button onclick="closePreview()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:4px 8px;transition:color var(--ease);" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted)'">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+        <div id="preview-body" style="padding:20px;max-height:580px;overflow-y:auto;"></div>
+    </div>
+</div>
+
+<!-- Reset Modal (admin only) -->
+{% if user_email == 'manumaddirala@gmail.com' %}
+<div id="reset-modal" class="hidden modal-overlay">
+    <div class="modal-box">
+        <div class="modal-icon mi-red"><i class="fa-solid fa-bomb"></i></div>
+        <div class="modal-title">Wipe Everything?</div>
+        <div class="modal-desc">This will permanently delete <strong>ALL</strong> files and the entire history database. This cannot be undone.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <button onclick="closeResetModal()" class="modal-btn modal-btn-ghost">Cancel</button>
+            <button id="confirm-reset-btn" class="modal-btn modal-btn-red">Yes, Wipe All</button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+let currentRecordId = null;
+function toggleMobileNav(){ document.getElementById('mobile-nav').classList.toggle('open'); }
+
+/* ── Animate similarity bars on load ─────── */
+document.addEventListener('DOMContentLoaded', () => {
+    // Stagger card animations
+    document.querySelectorAll('.dup-grid > .dup-card').forEach((card, i) => {
+        card.style.animationDelay = (0.04 + i * 0.08) + 's';
+    });
+    // Fill similarity bars after short delay
+    setTimeout(() => {
+        document.querySelectorAll('.sim-bar-fill').forEach(bar => {
+            bar.style.width = (bar.dataset.width || 0) + '%';
+        });
+    }, 400);
+});
+
+function filterCards(status, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.className = 'filter-btn');
+    btn.classList.add('active-' + status);
+    document.querySelectorAll('.dup-card').forEach(card => {
+        const show = status==='all' || card.dataset.status===status;
+        card.style.display = show ? '' : 'none';
+        if (show) {
+            // Re-trigger bar animation
+            const bar = card.querySelector('.sim-bar-fill');
+            if (bar) { bar.style.width='0%'; setTimeout(()=>{ bar.style.width=(bar.dataset.width||0)+'%'; },50); }
+        }
+    });
+}
+
+function confirmDelete(id) { currentRecordId=id; document.getElementById('delete-modal').classList.remove('hidden'); }
+function closeDeleteModal() { document.getElementById('delete-modal').classList.add('hidden'); }
+
+document.getElementById('confirm-delete-btn').addEventListener('click', async () => {
+    if (!currentRecordId) return;
+    const id=currentRecordId; const btn=document.getElementById('confirm-delete-btn');
+    btn.innerHTML='<i class="fa-solid fa-circle-notch fa-spin"></i>'; btn.disabled=true;
+    document.getElementById('delete-modal').classList.add('hidden');
+    try {
+        const res=await fetch(`/api/delete_record/${id}`,{method:'DELETE'});
+        const data=await res.json();
+        if (data.success) {
+            const card=document.getElementById(`record-${id}`);
+            if (card) {
+                card.style.transition='opacity 0.30s ease, transform 0.30s ease';
+                card.style.opacity='0'; card.style.transform='scale(0.88) translateY(-8px)';
+                setTimeout(()=>card.remove(),320);
+            }
+        } else { alert('Delete failed: '+(data.message||'Unknown error')); }
+    } catch(err){ alert('Server error: '+err.message); }
+    finally { btn.innerHTML='Delete'; btn.disabled=false; currentRecordId=null; }
+});
+
+function confirmHardReset() { const m=document.getElementById('reset-modal'); if(m) m.classList.remove('hidden'); }
+function closeResetModal()   { const m=document.getElementById('reset-modal'); if(m) m.classList.add('hidden'); }
+const resetBtn=document.getElementById('confirm-reset-btn');
+if (resetBtn) {
+    resetBtn.addEventListener('click', async () => {
+        const btn=document.getElementById('confirm-reset-btn');
+        btn.innerHTML='<i class="fa-solid fa-circle-notch fa-spin"></i>'; btn.disabled=true;
+        try {
+            const res=await fetch('/api/hard_reset',{method:'POST'}); const data=await res.json();
+            if(data.success){closeResetModal();location.reload();}
+            else{alert('Error: '+(data.message||'Unknown error'));btn.innerHTML='Yes, Wipe All';btn.disabled=false;}
+        } catch(err){alert('Server error: '+err.message);btn.innerHTML='Yes, Wipe All';btn.disabled=false;}
+    });
+}
+
+function openPreview(url, fileType, filename) {
+    const body=document.getElementById('preview-body'); const title=document.getElementById('preview-title');
+    const dlBtn=document.getElementById('preview-dl-btn');
+    title.textContent=filename; dlBtn.href=url; dlBtn.download=filename;
+    body.innerHTML='';
+    const type=fileType.toLowerCase();
+    if (type==='pdf') {
+        const iframe=document.createElement('iframe'); iframe.src=url;
+        iframe.style.cssText='width:100%;height:520px;border:none;border-radius:8px;'; body.appendChild(iframe);
+    } else if (['image','image_mark_list','image_fee_receipt','image_general'].includes(type)) {
+        const img=document.createElement('img'); img.src=url; img.alt=filename;
+        img.style.cssText='max-width:100%;max-height:520px;border-radius:8px;display:block;margin:0 auto;'; body.appendChild(img);
+    } else if (type==='audio') {
+        const wrap=document.createElement('div'); wrap.style.cssText='text-align:center;padding:40px 20px;';
+        const icon=document.createElement('div'); icon.innerHTML='<i class="fa-solid fa-music" style="font-size:48px;color:#8b5cf6;margin-bottom:24px;"></i>';
+        const audio=document.createElement('audio'); audio.controls=true; audio.src=url; audio.style.cssText='width:100%;margin-top:16px;';
+        const label=document.createElement('p'); label.textContent=filename; label.style.cssText='margin-top:12px;font-size:13px;color:#64748b;font-family:monospace;';
+        wrap.appendChild(icon); wrap.appendChild(audio); wrap.appendChild(label); body.appendChild(wrap);
+    } else if (['text','doc','other'].includes(type)||filename.match(/\.(txt|doc|docx|md|csv|json|xml|py|html|css|js)$/i)) {
+        const pre=document.createElement('pre');
+        pre.style.cssText='white-space:pre-wrap;word-break:break-word;font-family:"JetBrains Mono",monospace;font-size:12.5px;line-height:1.75;color:#1e293b;max-height:520px;overflow-y:auto;padding:20px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin:0;';
+        pre.textContent='Extracting text content…'; body.appendChild(pre);
+        const parts=url.split('/uploads/')[1]||''; const slashIdx=parts.indexOf('/');
+        const ft=parts.slice(0,slashIdx); const fn=parts.slice(slashIdx+1);
+        fetch(`/api/preview_text/${ft}/${fn}`).then(r=>r.json()).then(d=>{pre.textContent=d.text||'(empty file)';}).catch(()=>{pre.textContent='Could not extract file content.';});
+    } else {
+        const pre=document.createElement('pre');
+        pre.style.cssText='white-space:pre-wrap;word-break:break-all;font-family:monospace;font-size:12px;color:#334155;max-height:520px;overflow-y:auto;padding:16px;background:#f8fafc;border-radius:8px;';
+        pre.textContent='Preview not available for this file type.'; body.appendChild(pre);
+    }
+    document.getElementById('preview-modal').classList.remove('hidden');
+}
+function closePreview() { document.getElementById('preview-modal').classList.add('hidden'); }
+</script>
+<footer class="app-footer">
+    <div class="app-footer-inner">
+        <a href="{{ url_for('home') }}" class="footer-brand">
+            <div class="footer-brand-mark"><i class="fa-solid fa-layer-group"></i></div>
+            <div>
+                <div class="footer-brand-name">DeDuplication ML</div>
+                <div class="footer-brand-sub">AI Detection Engine</div>
+            </div>
+        </a>
+        <nav class="footer-links">
+            <a href="{{ url_for('about') }}"   class="footer-link"><i class="fa-solid fa-circle-info" style="font-size:10px;"></i> About</a>
+            <div class="footer-link-divider"></div>
+            <a href="{{ url_for('contact') }}" class="footer-link"><i class="fa-solid fa-headset" style="font-size:10px;"></i> Support</a>
+        </nav>
+        <div class="footer-copy">© 2025 <span>DeDuplication ML</span> · All rights reserved</div>
+    </div>
+</footer>
+</body>
+</html>
