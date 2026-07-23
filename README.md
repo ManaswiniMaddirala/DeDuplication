@@ -67,6 +67,6 @@ The system is built with a Flask backend and provides an interactive dashboard f
 
 ## **ABOUT ME**
 
-I am a final-year Computer Science (Artificial Intelligence) student with a strong interest in building intelligent systems and scalable applications. This project highlights my ability to design backend systems, implement efficient algorithms, and solve real-world data challenges.
+I am a Computer Science (Artificial Intelligence) student with a strong interest in building intelligent systems and scalable applications. This project highlights my ability to design backend systems, implement efficient algorithms, and solve real-world data challenges.
 
 I welcome feedback and collaboration opportunities.
